@@ -1,13 +1,14 @@
-Hey, I am Huang, Xuan (a.k.a. _@huxpro_). I worked on the [React Team](https://beta.reactjs.org/community/meet-the-team#react-core) at <del>Facebook</del>Meta.
+In an age where information flows like a surging tide, I am merely a quiet observer and recorder within it.
 
-I considered myself as a hybrid between a software engineer specifically into the programming languages theories and implementations domain (i.e. compiler, type system, type-based formal verification, virtual machine, runtime systems, garbage collection), and a creative technologiest deeply caring about many humanistic aspects (e.g. visual, sound, interaction) in UI and HCI in general.
+Hey,I Wang Qiwei. I am 13 years old and currently study at Xi’an Gaoxin No.1 Junior High School. Rather than defining myself with simple labels, I prefer to see myself as someone constantly exploring the world—seeking my own coordinates between code and reality, between logic and imagination.
 
-I also worked on the [Hermes JavaScript Engine](https://hermesengine.dev/), some other projects under the [Reality Labs (Research)](https://tech.fb.com/ar-vr/), and [ReasonML](https://reasonml.github.io/) (now [ReScript](https://rescript-lang.org/)) efforts at Meta (Facebook).
+I have a strong passion for programming, often accompanied by C++ and Python. To me, code is not merely a tool, but a language—concise and rigorous, yet filled with infinite possibilities. Each successful debugging feels like lighting a small lamp in the darkness, revealing the subtle beauty of logic.
 
-In the past, I worked on [Alitrip (Fliggy)](https://www.alitrip.com/) mobile and web apps under the [Alibaba Group](https://en.wikipedia.org/wiki/Alibaba_Group), found and lead front-end infrastructure team at an unicorn startup company [Beijing Weiying (a.k.a. WePiao, now acquired by Maoyan)](https://www.crunchbase.com/organization/beijing-weiying-technology), and helped [Ele.me (now acquired by Alibaba)](https://en.wikipedia.org/wiki/Ele.me) to upgrade their mobile web site into [the first influential PWA (progressive web app) in China](https://medium.com/elemefe/upgrading-ele-me-to-progressive-web-app-2a446832e509).
+Beyond technology, I also pay attention to the broader world. I enjoy studying the evolution of the internet and am deeply interested in changes in global affairs. Behind the screen, information weaves itself into intricate networks, and I try to trace its patterns to better understand this complex and real world.
 
-I studied BA, Digital Media Art at [Communication University of China](https://en.wikipedia.org/wiki/Communication_University_of_China) and MS, Computer Science (with a focus on programming languages, mainly supervised by [Prof. Matthew Fluet](https://www.cs.rit.edu/~mtf/)) at [Rochester Institute of Technology](https://en.wikipedia.org/wiki/Rochester_Institute_of_Technology).
+I believe that a person should not only focus on “what they can do,” but also reflect on “why they do it.” Therefore, I write, I think, and I continuously refine my understanding. This blog is both a record of my learning journey and a way for me to engage in dialogue with the world.
 
+If you are also interested in technology, the world, or ideas themselves, then welcome. Perhaps, between these lines, we may find a small yet genuine resonance.
 ##### Appearence
 
 - [React Labs: What We've Been Working On – June 2022][12] · React Blog · 2022
