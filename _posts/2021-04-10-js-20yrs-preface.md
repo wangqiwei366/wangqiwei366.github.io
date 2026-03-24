@@ -1,7 +1,7 @@
 ---
 layout:       post
-title:        "《JavaScript 二十年》推荐语"
-author:       "Hux"
+title:        "王琦玮对《JavaScript 二十年》推荐语"
+author:       "kimi"
 header-style: text
 catalog:      true
 tags:
