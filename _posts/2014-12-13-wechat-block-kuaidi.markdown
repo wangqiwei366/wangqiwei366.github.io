@@ -2,8 +2,8 @@
 layout:     post
 title:      "历史的伤疤与现实的镜像"
 subtitle:   "写在“六四”三十七周年的反思"
-date:       2014-12-13
-author:     "Hux"
+date:       2026-06-04
+author:     "kimi"
 header-img: "img/post-bg-kuaidi.jpg"
 tags:
     - 知乎
