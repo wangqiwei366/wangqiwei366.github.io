@@ -30,6 +30,71 @@
 <!-- Custom Theme JavaScript -->
 <script src="{{ "/js/hux-blog.min.js " | prepend: site.baseurl }}"></script>
 
+<!-- Replace people photos with landscape images -->
+<script>
+(function () {
+    var replacements = {
+        "/img/avatar-hux-home.jpg": "/img/bg-little-universe.jpg",
+        "/img/avatar-hux-ny.jpg": "/img/post-bg-universe.jpg",
+        "/img/avatar-hux.jpg": "/img/home-bg.jpg",
+        "/img/bg-me-2022.jpg": "/img/contact-bg.jpg",
+        "/img/blog-sidebar.jpg": "/img/blog-desktop.jpg",
+        "/img/in-post/post-c-u-ali-079717.png": "/img/post-bg-os-metro.jpg",
+        "/img/in-post/post-c-u-ali-team.png": "/img/post-bg-universe.jpg",
+        "/img/in-post/post-eleme-pwa/eleme-at-io.jpg": "/img/bg-little-universe.jpg",
+        "/img/in-post/post-f-f-weibo.png": "/img/post-bg-universe.jpg",
+        "/img/in-post/post-wmu/question.jpg": "/img/post-bg-infinity.jpg",
+        "/img/post-bg-apple-event-2015.jpg": "/img/post-bg-universe.jpg",
+        "/img/post-bg-digital-native.jpg": "/img/post-bg-web.jpg",
+        "/img/post-bg-dreamer.jpg": "/img/home-bg.jpg",
+        "/img/post-bg-e2e-ux.jpg": "/img/post-bg-os-metro.jpg",
+        "/img/post-bg-ios9-web.jpg": "/img/bg-material.jpg",
+        "/img/post-bg-kuaidi.jpg": "/img/contact-bg.jpg",
+        "/img/post-sample-image.jpg": "/img/post-bg-infinity.jpg"
+    };
+
+    function asset(path) {
+        return "{{ site.baseurl }}" + path;
+    }
+
+    function pathname(url) {
+        var a = document.createElement("a");
+        a.href = url;
+        return a.pathname;
+    }
+
+    function replacePeoplePhotos() {
+        var images = document.getElementsByTagName("img");
+        for (var i = 0; i < images.length; i++) {
+            var src = images[i].getAttribute("src") || "";
+            var key = pathname(src);
+            if (src.indexOf("github.com/Huxpro.png") !== -1) {
+                images[i].src = asset("/img/home-bg.jpg");
+            } else if (replacements[key]) {
+                images[i].src = asset(replacements[key]);
+            }
+        }
+
+        var headers = document.querySelectorAll(".intro-header");
+        for (var h = 0; h < headers.length; h++) {
+            var bg = headers[h].style.backgroundImage || "";
+            for (var oldPath in replacements) {
+                if (bg.indexOf(oldPath) !== -1 || bg.indexOf(oldPath.slice(1)) !== -1) {
+                    headers[h].style.backgroundImage = "url('" + asset(replacements[oldPath]) + "')";
+                    break;
+                }
+            }
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", replacePeoplePhotos);
+    } else {
+        replacePeoplePhotos();
+    }
+})();
+</script>
+
 <!-- Simple Jekyll Search -->
 <script src="{{ "/js/simple-jekyll-search.min.js" | prepend: site.baseurl }}"></script>
 
