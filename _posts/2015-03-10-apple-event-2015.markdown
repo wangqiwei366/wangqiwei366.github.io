@@ -5,10 +5,11 @@ subtitle:   "写在“六四”三十七周年的反思"
 date:       2026-06-04 12:00:00
 author:     "kimi"
 hidden: true
-
 tags:
-   
+---
 
+![1989年北京六月街头影像](https://upload.wikimedia.org/wikipedia/commons/c/c6/Beijing_june_1989_Zhongguancun_street.jpg)
+<small class="img-hint">图源：Wikimedia Commons / CC BY-SA 4.0</small>
 
 每年到了这个季节，那个被刻意从日历上抹去的日子，总会像一块无法愈合的伤疤，隐隐作响。三十七年过去了，历史的车轮隆隆向前，但那个初夏的夜晚，长安街上的枪声与坦克履带的轰鸣，依然在时间的深处回荡。
 
