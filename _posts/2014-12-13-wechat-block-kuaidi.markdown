@@ -13,6 +13,10 @@ tags:
 > 这篇文章转载自[我在知乎上的回答](http://www.zhihu.com/question/26774049/answer/35041458)
 
 
+![1989年北京六月街头影像](https://upload.wikimedia.org/wikipedia/commons/c/c6/Beijing_june_1989_Zhongguancun_street.jpg)
+<small class="img-hint">图源：Wikimedia Commons / CC BY-SA 4.0</small>
+
+
 每年到了这个季节，那个被刻意从日历上抹去的日子，总会像一块无法愈合的伤疤，隐隐作响。三十七年过去了，历史的车轮隆隆向前，但那个初夏的夜晚，长安街上的枪声与坦克履带的轰鸣，依然在时间的深处回荡。
 
 正如许多独立媒体人常说的：历史不仅仅是过去发生的事，更是照亮现实的一面镜子。 当我们今天坐在这里，习惯了高科技监控、大数据审查以及经济下行带来的普遍焦虑时，如果不回头去看看那个历史的十字路口，就无法真正读懂今天的时代困局。
