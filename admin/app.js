@@ -3,6 +3,7 @@ const state = {
   password: sessionStorage.getItem("siteAdminPassword") || "",
   posts: [],
   current: null,
+  editing: null,
   progress: JSON.parse(localStorage.getItem("siteAdminProgress") || "[]"),
 };
 
@@ -23,8 +24,8 @@ function setView(name) {
   $$(".nav").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   const titles = {
     dashboard: ["总览", "在任何设备上管理这个 GitHub Pages 网站。"],
-    publish: ["发布新文章", "写完后直接发布到 GitHub。"],
-    posts: ["文章管理", "查看或删除已经发布的文章。"],
+    publish: [state.editing ? "修改文章" : "发布新文章", state.editing ? "保存后会覆盖原文章。" : "写完后直接发布到 GitHub。"],
+    posts: ["文章管理", "查看、修改或删除已经发布的文章。"],
     progress: ["发布进度", "查看每次操作记录。"],
   };
   $("#pageTitle").textContent = titles[name][0];
@@ -73,17 +74,10 @@ async function testBackend() {
     renderConnectionState();
     return;
   }
-  try {
-    const result = await api("/health");
-    $("#tokenState").textContent = `已连接：${result.repo}`;
-    $("#tokenState").className = "pill good";
-    $("#repoState").textContent = "已连接";
-  } catch (error) {
-    $("#tokenState").textContent = "连接失败";
-    $("#tokenState").className = "pill";
-    $("#repoState").textContent = "需检查";
-    throw error;
-  }
+  const result = await api("/health");
+  $("#tokenState").textContent = `已连接：${result.repo}`;
+  $("#tokenState").className = "pill good";
+  $("#repoState").textContent = "已连接";
 }
 
 async function loadPosts() {
@@ -94,12 +88,46 @@ async function loadPosts() {
   $("#postCount").textContent = state.posts.length;
 }
 
+function resetEditor() {
+  state.editing = null;
+  $("#editorTitle").textContent = "发布新文章";
+  $("#editorMeta").textContent = "写完后会直接发布到 GitHub。";
+  $("#publishBtn").textContent = "发布";
+  $("#cancelEditBtn").style.display = "none";
+  $("#postTitle").value = "";
+  $("#postSubtitle").value = "";
+  $("#postDate").value = toDateInput();
+  $("#postAuthor").value = "kimi";
+  $("#postImage").value = "";
+  $("#postTags").value = "";
+  $("#postBody").value = "";
+  $("#preview").innerHTML = "";
+}
+
+function fillEditor(post) {
+  state.editing = post;
+  $("#editorTitle").textContent = "修改文章";
+  $("#editorMeta").textContent = post.path;
+  $("#publishBtn").textContent = "保存修改";
+  $("#cancelEditBtn").style.display = "";
+  $("#postTitle").value = post.title || "";
+  $("#postSubtitle").value = post.subtitle || "";
+  $("#postDate").value = toDateInput(post.date);
+  $("#postAuthor").value = post.author || "kimi";
+  $("#postImage").value = post.image || "";
+  $("#postTags").value = (post.tags || []).join("，");
+  $("#postBody").value = post.body || "";
+  $("#preview").innerHTML = markdown(post.body || "");
+  setView("publish");
+}
+
 async function publishPost() {
   const title = $("#postTitle").value.trim();
   const body = $("#postBody").value.trim();
   if (!title) return toast("先填写标题");
   if (!body) return toast("先填写正文");
-  const entry = createProgress(title);
+  const isEdit = !!state.editing;
+  const entry = createProgress(isEdit ? `修改：${title}` : title);
   try {
     updateProgress(entry.id, "整理文章", 25);
     const payload = {
@@ -111,14 +139,19 @@ async function publishPost() {
       tags: $("#postTags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
       body,
     };
-    updateProgress(entry.id, "提交到私密后端", 55);
+    if (state.editing) {
+      payload.path = state.editing.path;
+      payload.sha = state.editing.sha;
+    }
+    updateProgress(entry.id, isEdit ? "保存修改到后端" : "提交到后端", 55, payload.path || "");
     const result = await api("/posts", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    updateProgress(entry.id, "发布完成，等待 GitHub Pages 刷新", 100, result.post?.path || "", "done");
-    toast("文章已发布");
+    updateProgress(entry.id, isEdit ? "修改完成，等待 GitHub Pages 刷新" : "发布完成，等待 GitHub Pages 刷新", 100, result.post?.path || "", "done");
+    toast(isEdit ? "文章已修改" : "文章已发布");
     await loadPosts();
+    resetEditor();
     setView("progress");
   } catch (error) {
     updateProgress(entry.id, error.message, 100, "", "failed");
@@ -228,9 +261,11 @@ function escapeHtml(value) {
 }
 
 function toDateInput(value) {
-  const date = value ? new Date(value) : new Date();
+  if (!value) value = new Date();
+  const date = value instanceof Date ? value : new Date(String(value).replace(" ", "T"));
+  const safe = Number.isNaN(date.getTime()) ? new Date() : date;
   const pad = (num) => String(num).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${safe.getFullYear()}-${pad(safe.getMonth() + 1)}-${pad(safe.getDate())}T${pad(safe.getHours())}:${pad(safe.getMinutes())}`;
 }
 
 function fromDate(value) {
@@ -239,7 +274,10 @@ function fromDate(value) {
 
 function bind() {
   $$(".nav").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
-  $("#newPostBtn").addEventListener("click", () => setView("publish"));
+  $("#newPostBtn").addEventListener("click", () => {
+    resetEditor();
+    setView("publish");
+  });
   $("#saveTokenBtn")?.addEventListener("click", async () => {
     state.apiBase = normalizeApiBase($("#apiInput").value);
     state.password = $("#passwordInput").value;
@@ -262,6 +300,14 @@ function bind() {
   });
   $("#refreshBtn")?.addEventListener("click", () => loadPosts().catch((error) => toast(error.message)));
   $("#publishBtn")?.addEventListener("click", publishPost);
+  $("#cancelEditBtn")?.addEventListener("click", () => {
+    resetEditor();
+    setView("posts");
+  });
+  $("#editBtn")?.addEventListener("click", () => {
+    if (!state.current) return toast("先选择文章");
+    fillEditor(state.current);
+  });
   $("#deleteBtn")?.addEventListener("click", deletePost);
   $("#searchInput")?.addEventListener("input", renderPosts);
   $("#postBody")?.addEventListener("input", () => {
@@ -283,7 +329,7 @@ function bind() {
 }
 
 bind();
-$("#postDate").value = toDateInput();
+resetEditor();
 renderConnectionState();
 renderProgress();
 testBackend().then(() => {
