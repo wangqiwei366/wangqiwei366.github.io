@@ -1,5 +1,5 @@
 const state = {
-  apiBase: localStorage.getItem("siteAdminApiBase") || "",
+  apiBase: localStorage.getItem("siteAdminApiBase") || "https://wangqiwei366-site-admin.wangqiwei366.workers.dev",
   password: sessionStorage.getItem("siteAdminPassword") || "",
   posts: [],
   current: null,
@@ -240,7 +240,7 @@ function fromDate(value) {
 function bind() {
   $$(".nav").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
   $("#newPostBtn").addEventListener("click", () => setView("publish"));
-  $("#saveTokenBtn").addEventListener("click", async () => {
+  $("#saveTokenBtn")?.addEventListener("click", async () => {
     state.apiBase = normalizeApiBase($("#apiInput").value);
     state.password = $("#passwordInput").value;
     if (!state.apiBase) return toast("先填写后端地址");
@@ -252,7 +252,7 @@ function bind() {
     await testBackend();
     await loadPosts().catch((error) => toast(error.message));
   });
-  $("#forgetTokenBtn").addEventListener("click", () => {
+  $("#forgetTokenBtn")?.addEventListener("click", () => {
     state.apiBase = "";
     state.password = "";
     localStorage.removeItem("siteAdminApiBase");
@@ -260,22 +260,22 @@ function bind() {
     renderConnectionState();
     toast("已清除本设备连接信息");
   });
-  $("#refreshBtn").addEventListener("click", () => loadPosts().catch((error) => toast(error.message)));
-  $("#publishBtn").addEventListener("click", publishPost);
-  $("#deleteBtn").addEventListener("click", deletePost);
-  $("#searchInput").addEventListener("input", renderPosts);
-  $("#postBody").addEventListener("input", () => {
+  $("#refreshBtn")?.addEventListener("click", () => loadPosts().catch((error) => toast(error.message)));
+  $("#publishBtn")?.addEventListener("click", publishPost);
+  $("#deleteBtn")?.addEventListener("click", deletePost);
+  $("#searchInput")?.addEventListener("input", renderPosts);
+  $("#postBody")?.addEventListener("input", () => {
     $("#preview").innerHTML = markdown($("#postBody").value);
   });
-  $("#postList").addEventListener("click", (event) => {
+  $("#postList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-path]");
     if (button) openPost(button.dataset.path);
   });
-  $("#recentList").addEventListener("click", (event) => {
+  $("#recentList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-path]");
     if (button) openPost(button.dataset.path);
   });
-  $("#clearProgressBtn").addEventListener("click", () => {
+  $("#clearProgressBtn")?.addEventListener("click", () => {
     state.progress = [];
     saveProgress();
     renderProgress();
