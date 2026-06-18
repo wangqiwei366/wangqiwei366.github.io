@@ -1,9 +1,6 @@
-const OWNER = "wangqiwei366";
-const REPO = "wangqiwei366.github.io";
-const BRANCH = "master";
-
 const state = {
-  token: localStorage.getItem("siteAdminToken") || "",
+  apiBase: localStorage.getItem("siteAdminApiBase") || "",
+  password: sessionStorage.getItem("siteAdminPassword") || "",
   posts: [],
   current: null,
   progress: JSON.parse(localStorage.getItem("siteAdminProgress") || "[]"),
@@ -34,134 +31,67 @@ function setView(name) {
   $("#pageSubtitle").textContent = titles[name][1];
 }
 
-function requireToken() {
-  if (!state.token) throw new Error("先保存 GitHub Token");
+function normalizeApiBase(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
 }
 
-async function github(path, options = {}) {
-  requireToken();
-  const response = await fetch(`https://api.github.com${path}`, {
+function requireBackend() {
+  if (!state.apiBase) throw new Error("先填写后端地址");
+  if (!state.password) throw new Error("先填写管理密码");
+}
+
+async function api(path, options = {}) {
+  requireBackend();
+  const response = await fetch(`${state.apiBase}${path}`, {
     ...options,
     headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${state.token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+      "X-Admin-Password": state.password,
       ...(options.headers || {}),
     },
   });
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!response.ok) throw new Error(data.message || "GitHub 请求失败");
+  const data = await response.json();
+  if (!data.ok) throw new Error(data.error || "操作失败");
   return data;
 }
 
-function contentsUrl(path) {
-  return `/repos/${OWNER}/${REPO}/contents/${path.split("/").map(encodeURIComponent).join("/")}`;
+function renderConnectionState(message = "") {
+  if (!state.apiBase || !state.password) {
+    $("#tokenState").textContent = "未连接";
+    $("#tokenState").className = "pill";
+    $("#repoState").textContent = "未连接";
+  } else {
+    $("#tokenState").textContent = message || "已保存，待检查";
+    $("#tokenState").className = "pill good";
+    $("#repoState").textContent = "待检查";
+  }
+  $("#apiInput").value = state.apiBase;
 }
 
-async function testToken() {
-  if (!state.token) {
-    renderTokenState();
+async function testBackend() {
+  if (!state.apiBase || !state.password) {
+    renderConnectionState();
     return;
   }
   try {
-    const user = await github("/user");
-    $("#tokenState").textContent = `已连接：${user.login}`;
+    const result = await api("/health");
+    $("#tokenState").textContent = `已连接：${result.repo}`;
     $("#tokenState").className = "pill good";
     $("#repoState").textContent = "已连接";
   } catch (error) {
-    $("#tokenState").textContent = "Token 失效";
+    $("#tokenState").textContent = "连接失败";
     $("#tokenState").className = "pill";
-    $("#repoState").textContent = "需重设";
+    $("#repoState").textContent = "需检查";
+    throw error;
   }
-}
-
-function renderTokenState() {
-  $("#tokenState").textContent = state.token ? "已保存，待检查" : "未连接";
-  $("#tokenState").className = state.token ? "pill good" : "pill";
-  $("#repoState").textContent = state.token ? "待检查" : "未连接";
 }
 
 async function loadPosts() {
-  const files = await github(`${contentsUrl("_posts")}?ref=${BRANCH}`);
-  const postFiles = files.filter((file) => /\.(md|markdown)$/i.test(file.name));
-  const posts = [];
-  for (const file of postFiles) {
-    const raw = await fetchRaw(file.download_url);
-    const parsed = parsePost(raw);
-    posts.push({
-      path: file.path,
-      sha: file.sha,
-      title: parsed.data.title || file.name,
-      date: parsed.data.date || file.name.slice(0, 10),
-      author: parsed.data.author || "",
-      tags: parsed.data.tags || [],
-      body: parsed.body,
-      raw,
-    });
-  }
-  state.posts = posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const result = await api("/posts");
+  state.posts = result.posts || [];
+  state.posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
   renderPosts();
   $("#postCount").textContent = state.posts.length;
-}
-
-async function fetchRaw(url) {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error("读取文章失败");
-  return response.text();
-}
-
-function parsePost(raw) {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!match) return { data: {}, body: raw };
-  const data = {};
-  let key = "";
-  for (const line of match[1].split(/\r?\n/)) {
-    const pair = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (pair) {
-      key = pair[1];
-      let value = pair[2].trim();
-      value = value.replace(/^["']|["']$/g, "");
-      data[key] = value;
-      continue;
-    }
-    const item = line.match(/^\s+-\s*(.*)$/);
-    if (item && key) {
-      if (!Array.isArray(data[key])) data[key] = [];
-      data[key].push(item[1].trim());
-    }
-  }
-  return { data, body: raw.slice(match[0].length) };
-}
-
-function renderPostFile(data, body) {
-  const lines = [
-    "---",
-    'layout: "post"',
-    `title: "${yaml(data.title)}"`,
-    `subtitle: "${yaml(data.subtitle)}"`,
-    `date: "${data.date}"`,
-    `author: "${yaml(data.author)}"`,
-  ];
-  if (data.image) lines.push(`header-img: "${yaml(data.image)}"`);
-  lines.push("published: true", "hidden: false", "managed: true", "tags:");
-  data.tags.forEach((tag) => lines.push(`  - ${tag}`));
-  lines.push("---", "");
-  return `${lines.join("\n")}${body.trim()}\n`;
-}
-
-function yaml(value) {
-  return String(value || "").replace(/"/g, '\\"');
-}
-
-function slug(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/['"]/g, "")
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "new-post";
 }
 
 async function publishPost() {
@@ -169,31 +99,24 @@ async function publishPost() {
   const body = $("#postBody").value.trim();
   if (!title) return toast("先填写标题");
   if (!body) return toast("先填写正文");
-  const entry = progress(title);
+  const entry = createProgress(title);
   try {
     updateProgress(entry.id, "整理文章", 25);
-    const date = fromDate($("#postDate").value);
-    const tags = $("#postTags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
-    const path = `_posts/${date.slice(0, 10)}-${slug(title)}.md`;
-    const content = renderPostFile({
+    const payload = {
       title,
       subtitle: $("#postSubtitle").value.trim(),
-      date,
+      date: fromDate($("#postDate").value),
       author: $("#postAuthor").value.trim() || "kimi",
       image: $("#postImage").value.trim(),
-      tags,
-    }, body);
-    updateProgress(entry.id, "上传到 GitHub", 70, path);
-    await github(contentsUrl(path), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: `Publish ${path}`,
-        content: utf8ToBase64(content),
-        branch: BRANCH,
-      }),
+      tags: $("#postTags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+      body,
+    };
+    updateProgress(entry.id, "提交到私密后端", 55);
+    const result = await api("/posts", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
-    updateProgress(entry.id, "发布完成，等待 GitHub Pages 刷新", 100, path, "done");
+    updateProgress(entry.id, "发布完成，等待 GitHub Pages 刷新", 100, result.post?.path || "", "done");
     toast("文章已发布");
     await loadPosts();
     setView("progress");
@@ -206,21 +129,16 @@ async function publishPost() {
 async function deletePost() {
   if (!state.current) return toast("先选择文章");
   if (!confirm("确定删除这篇文章吗？")) return;
-  const entry = progress(`删除：${state.current.title}`);
+  const entry = createProgress(`删除：${state.current.title}`);
   try {
-    updateProgress(entry.id, "从 GitHub 删除", 70, state.current.path);
-    await github(contentsUrl(state.current.path), {
+    updateProgress(entry.id, "提交删除请求", 55, state.current.path);
+    await api("/posts", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: `Delete ${state.current.path}`,
-        sha: state.current.sha,
-        branch: BRANCH,
-      }),
+      body: JSON.stringify({ path: state.current.path, sha: state.current.sha }),
     });
-    state.current = null;
-    updateProgress(entry.id, "删除完成", 100, "", "done");
+    updateProgress(entry.id, "删除完成", 100, state.current.path, "done");
     toast("文章已删除");
+    state.current = null;
     await loadPosts();
     $("#readerTitle").textContent = "选择一篇文章";
     $("#readerMeta").textContent = "选择文章后可查看内容。";
@@ -233,11 +151,11 @@ async function deletePost() {
 
 function renderPosts() {
   const keyword = $("#searchInput")?.value.trim().toLowerCase() || "";
-  const filtered = state.posts.filter((post) => `${post.title} ${post.date} ${post.tags.join(" ")}`.toLowerCase().includes(keyword));
+  const filtered = state.posts.filter((post) => `${post.title} ${post.date} ${(post.tags || []).join(" ")}`.toLowerCase().includes(keyword));
   const html = filtered.map((post) => `
     <button class="item ${state.current?.path === post.path ? "active" : ""}" data-path="${escapeHtml(post.path)}">
       <strong>${escapeHtml(post.title)}</strong>
-      <span>${escapeHtml(post.date)} · ${escapeHtml(post.tags.join("、"))}</span>
+      <span>${escapeHtml(post.date)} · ${escapeHtml((post.tags || []).join("、"))}</span>
     </button>
   `).join("") || `<div class="item">没有文章</div>`;
   $("#postList").innerHTML = html;
@@ -248,8 +166,8 @@ function openPost(path) {
   state.current = state.posts.find((post) => post.path === path);
   if (!state.current) return;
   $("#readerTitle").textContent = state.current.title;
-  $("#readerMeta").textContent = `${state.current.date} · ${state.current.author}`;
-  $("#readerBody").innerHTML = markdown(state.current.body);
+  $("#readerMeta").textContent = `${state.current.date || ""} · ${state.current.author || ""}`;
+  $("#readerBody").innerHTML = markdown(state.current.body || "");
   renderPosts();
   setView("posts");
 }
@@ -266,7 +184,7 @@ function markdown(source) {
     .join("");
 }
 
-function progress(title) {
+function createProgress(title) {
   const item = { id: String(Date.now()), title, message: "准备开始", percent: 0, path: "", status: "running", time: new Date().toLocaleString() };
   state.progress.unshift(item);
   saveProgress();
@@ -299,13 +217,6 @@ function renderProgress() {
   `).join("") || `<div class="item">还没有记录</div>`;
 }
 
-function utf8ToBase64(value) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return btoa(binary);
-}
-
 function escapeHtml(value) {
   return String(value || "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -330,22 +241,24 @@ function bind() {
   $$(".nav").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
   $("#newPostBtn").addEventListener("click", () => setView("publish"));
   $("#saveTokenBtn").addEventListener("click", async () => {
-    state.token = $("#tokenInput").value.trim();
-    if (!state.token) return toast("先粘贴 Token");
-    localStorage.setItem("siteAdminToken", state.token);
-    $("#tokenInput").value = "";
-    renderTokenState();
-    await testToken();
+    state.apiBase = normalizeApiBase($("#apiInput").value);
+    state.password = $("#passwordInput").value;
+    if (!state.apiBase) return toast("先填写后端地址");
+    if (!state.password) return toast("先填写管理密码");
+    localStorage.setItem("siteAdminApiBase", state.apiBase);
+    sessionStorage.setItem("siteAdminPassword", state.password);
+    $("#passwordInput").value = "";
+    renderConnectionState();
+    await testBackend();
     await loadPosts().catch((error) => toast(error.message));
   });
   $("#forgetTokenBtn").addEventListener("click", () => {
-    state.token = "";
-    localStorage.removeItem("siteAdminToken");
-    renderTokenState();
-    toast("已清除本设备 Token");
-  });
-  $("#openTokenBtn").addEventListener("click", () => {
-    window.open("https://github.com/settings/tokens/new?scopes=public_repo&description=site-online-admin", "_blank", "noopener");
+    state.apiBase = "";
+    state.password = "";
+    localStorage.removeItem("siteAdminApiBase");
+    sessionStorage.removeItem("siteAdminPassword");
+    renderConnectionState();
+    toast("已清除本设备连接信息");
   });
   $("#refreshBtn").addEventListener("click", () => loadPosts().catch((error) => toast(error.message)));
   $("#publishBtn").addEventListener("click", publishPost);
@@ -371,8 +284,8 @@ function bind() {
 
 bind();
 $("#postDate").value = toDateInput();
-renderTokenState();
+renderConnectionState();
 renderProgress();
-testToken().then(() => {
-  if (state.token) return loadPosts();
+testBackend().then(() => {
+  if (state.apiBase && state.password) return loadPosts();
 }).catch((error) => toast(error.message));
