@@ -88,7 +88,32 @@
             <label>封面图<input id="postImage" placeholder="img/home-bg.jpg 或 https://..."></label>
             <label>标签<input id="postTags" placeholder="用逗号分隔"></label>
           </div>
-          <textarea id="postBody" spellcheck="false" placeholder="在这里写正文，支持 Markdown。"></textarea>
+          <div class="editor-toolbar" aria-label="文章排版工具">
+            <select id="fontSizeSelect" title="字号">
+              <option value="">字号</option>
+              <option value="15">小字</option>
+              <option value="17">正文</option>
+              <option value="20">大字</option>
+              <option value="24">特大</option>
+            </select>
+            <select id="fontWeightSelect" title="字重">
+              <option value="">粗细</option>
+              <option value="400">常规</option>
+              <option value="600">半粗</option>
+              <option value="700">加粗</option>
+            </select>
+            <button class="tool-btn" data-format="h2" title="二级标题">H2</button>
+            <button class="tool-btn" data-format="h3" title="三级标题">H3</button>
+            <button class="tool-btn" data-format="bold" title="加粗">B</button>
+            <button class="tool-btn" data-format="italic" title="斜体">I</button>
+            <button class="tool-btn" data-format="quote" title="引用">"</button>
+            <button class="tool-btn" data-format="bullet" title="项目列表">•</button>
+            <button class="tool-btn" data-format="number" title="编号列表">1.</button>
+            <button class="tool-btn" data-format="link" title="链接">Link</button>
+            <button class="tool-btn" data-format="image" title="图片">Img</button>
+            <button class="tool-btn" data-format="divider" title="分隔线">---</button>
+          </div>
+          <textarea id="postBody" spellcheck="false" placeholder="在这里写正文，选中文字后可用上方按钮排版。"></textarea>
           <div class="preview" id="preview"></div>
         </article>
       </section>
