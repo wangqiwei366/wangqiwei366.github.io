@@ -344,6 +344,9 @@ function bind() {
     renderTokenState();
     toast("已清除本设备 Token");
   });
+  $("#openTokenBtn").addEventListener("click", () => {
+    window.open("https://github.com/settings/tokens/new?scopes=public_repo&description=site-online-admin", "_blank", "noopener");
+  });
   $("#refreshBtn").addEventListener("click", () => loadPosts().catch((error) => toast(error.message)));
   $("#publishBtn").addEventListener("click", publishPost);
   $("#deleteBtn").addEventListener("click", deletePost);
