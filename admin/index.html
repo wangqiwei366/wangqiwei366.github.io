@@ -9,7 +9,7 @@
   <body>
     <aside class="sidebar">
       <div class="brand">
-        <span>站</span>
+        <span class="brand-mark"><img src="/img/favicon-haibara.png" alt=""></span>
         <div>
           <strong>在线运营台</strong>
           <small>wangqiwei366.github.io</small>
@@ -71,8 +71,14 @@
       <section class="view" id="publishView">
         <article class="panel">
           <div class="panel-head">
-            <h2>发布新文章</h2>
-            <button class="primary" id="publishBtn">发布</button>
+            <div>
+              <h2 id="editorTitle">发布新文章</h2>
+              <p class="meta" id="editorMeta">写完后会直接发布到 GitHub。</p>
+            </div>
+            <div class="actions">
+              <button class="ghost" id="cancelEditBtn">取消修改</button>
+              <button class="primary" id="publishBtn">发布</button>
+            </div>
           </div>
           <div class="form-grid">
             <label>标题<input id="postTitle" placeholder="输入文章标题"></label>
@@ -99,7 +105,10 @@
           <article class="panel">
             <div class="panel-head">
               <h2 id="readerTitle">选择一篇文章</h2>
-              <button class="ghost danger" id="deleteBtn">删除文章</button>
+              <div class="actions">
+                <button class="ghost" id="editBtn">修改文章</button>
+                <button class="ghost danger" id="deleteBtn">删除文章</button>
+              </div>
             </div>
             <div class="meta" id="readerMeta">选择文章后可查看内容。</div>
             <div class="preview" id="readerBody"></div>
