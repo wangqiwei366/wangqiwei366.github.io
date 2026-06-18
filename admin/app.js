@@ -207,14 +207,70 @@ function openPost(path) {
 
 function markdown(source) {
   return escapeHtml(source)
+    .replace(/^\[font size=(\d+) weight=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-size:$1px;font-weight:$2">$3</p>')
+    .replace(/^\[font size=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-size:$1px">$2</p>')
+    .replace(/^\[font weight=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-weight:$1">$2</p>')
+    .replace(/^---$/gm, "<hr>")
     .replace(/^### (.*)$/gm, "<h3>$1</h3>")
     .replace(/^## (.*)$/gm, "<h2>$1</h2>")
     .replace(/^# (.*)$/gm, "<h1>$1</h1>")
+    .replace(/^> (.*)$/gm, "<blockquote>$1</blockquote>")
+    .replace(/^\d+\. (.*)$/gm, "<p class=\"ordered-line\">$1</p>")
+    .replace(/^- (.*)$/gm, "<p class=\"bullet-line\">$1</p>")
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
     .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
     .split(/\n{2,}/)
-    .map((block) => block.startsWith("<h") || block.startsWith("<img") ? block : `<p>${block.replace(/\n/g, "<br>")}</p>`)
+    .map((block) => /^(<h|<img|<p style|<p class|<blockquote|<hr)/.test(block) ? block : `<p>${block.replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function selectedTextArea() {
+  return $("#postBody");
+}
+
+function updatePreview() {
+  $("#preview").innerHTML = markdown($("#postBody").value);
+}
+
+function replaceSelection(transform) {
+  const textarea = selectedTextArea();
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selected = textarea.value.slice(start, end);
+  const replacement = transform(selected || "选中文字");
+  textarea.value = textarea.value.slice(0, start) + replacement + textarea.value.slice(end);
+  textarea.focus();
+  textarea.setSelectionRange(start, start + replacement.length);
+  updatePreview();
+}
+
+function applyFormat(format) {
+  const lineWrap = (prefix) => replaceSelection((text) => text.split(/\n/).map((line) => `${prefix}${line}`).join("\n"));
+  const inlineWrap = (left, right = left) => replaceSelection((text) => `${left}${text}${right}`);
+  if (format === "h2") return lineWrap("## ");
+  if (format === "h3") return lineWrap("### ");
+  if (format === "bold") return inlineWrap("**");
+  if (format === "italic") return inlineWrap("*");
+  if (format === "quote") return lineWrap("> ");
+  if (format === "bullet") return lineWrap("- ");
+  if (format === "number") {
+    return replaceSelection((text) => text.split(/\n/).map((line, index) => `${index + 1}. ${line}`).join("\n"));
+  }
+  if (format === "link") return replaceSelection((text) => `[${text}](https://)`);
+  if (format === "image") return replaceSelection((text) => `![${text}](https://)`);
+  if (format === "divider") return replaceSelection(() => "\n\n---\n\n");
+}
+
+function applyFontStyle() {
+  const size = $("#fontSizeSelect")?.value;
+  const weight = $("#fontWeightSelect")?.value;
+  if (!size && !weight) return;
+  replaceSelection((text) => {
+    const attrs = [size ? `size=${size}` : "", weight ? `weight=${weight}` : ""].filter(Boolean).join(" ");
+    return `[font ${attrs}]${text}[/font]`;
+  });
 }
 
 function createProgress(title) {
@@ -310,9 +366,9 @@ function bind() {
   });
   $("#deleteBtn")?.addEventListener("click", deletePost);
   $("#searchInput")?.addEventListener("input", renderPosts);
-  $("#postBody")?.addEventListener("input", () => {
-    $("#preview").innerHTML = markdown($("#postBody").value);
-  });
+  $("#postBody")?.addEventListener("input", updatePreview);
+  $$(".tool-btn").forEach((button) => button.addEventListener("click", () => applyFormat(button.dataset.format)));
+  $("#applyFontBtn")?.addEventListener("click", applyFontStyle);
   $("#postList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-path]");
     if (button) openPost(button.dataset.path);
