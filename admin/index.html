@@ -36,17 +36,19 @@
       <section class="view active" id="dashboardView">
         <div class="panel">
           <div class="panel-head">
-            <h2>GitHub 连接</h2>
+            <h2>私密后端连接</h2>
             <span class="pill" id="tokenState">未连接</span>
           </div>
           <div class="token-grid">
-            <label>GitHub Token
-              <input id="tokenInput" type="password" autocomplete="off" placeholder="在这台设备上粘贴 Token">
+            <label>后端地址
+              <input id="apiInput" autocomplete="off" placeholder="https://...workers.dev">
+            </label>
+            <label>管理密码
+              <input id="passwordInput" type="password" autocomplete="off" placeholder="输入管理密码">
             </label>
             <div class="actions">
               <button class="primary" id="saveTokenBtn">保存到本设备</button>
               <button class="ghost" id="forgetTokenBtn">清除</button>
-              <button class="ghost" id="openTokenBtn">打开 Token 页面</button>
             </div>
           </div>
         </div>
