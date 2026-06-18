@@ -1,22 +1,15 @@
 ---
-layout:     post
-title:      "中国高等教育的系统性失败"
-subtitle:   "The Systematic Failure of Higher Education in China"
-date:       2026-01-19 12:00:00
-author:     "kimi"
-catalog: false
-published: false
-header-style: text
+layout: "post"
+title: "中国高等教育的系统性失败"
+subtitle: "The Systematic Failure of Higher Education in China"
+date: "2026-01-19 12:00:00"
+author: "kimi"
+published: true
+hidden: false
+managed: true
 tags:
-  - 被夹
+  - 社会观察
 ---
-
-> 该回答在知乎问题[「如何评价上海交通大学 18 级计算机系第一名「迟先生」的言论？」](https://www.zhihu.com/question/439622084/answer/1685314467) 下无原因被夹。
-> 询问我的「专属小管家」多次后仍然给不出任何原因与具体修改意见，自己多次尝试小幅修改无果，干脆直接将原文发上来吧。
-
-
-高票 [@Youngster38324 的回答](https://www.zhihu.com/question/439622084/answer/1681505518)透露出来的本质上是「**中国高等教育的系统性失败**」，逐层来看:
-
 1. 「**进大学前唯分数和同质化教育**」导致了太多人去大学后根本不知道自己要干嘛，很多人专业根本就不是自己选的更不要说知道自己有没有兴趣了，即便是很多高分考生也路径依赖地以为继续努力填鸭就能成功，没有意识到高考后的人生已经换赛道了。这里对比美国高中生的 AP（Advanced Placement）预科制度以及整体社会鼓励向自我发展看而不是向钱看的风气。
 
 2. 「**进大学后专业制度没有容错性**」，即便已经发现自己不喜欢被录取专业了也没有办法，因为转专业制度毫无人性（通常要求你先要在你已经不喜欢了的本专业内卷到班级前多少名）。对比美国本科，专业可以 undecided（先上课再决定专业，比如经典的哈佛 CS50，你上下来感兴趣了再去选 CS）；学位本身只是某个学科下课程学分累计的自然结果，因此可以灵活的转专业与多学位；班级这种促进内卷的概念被弱化，强调跟自己比关注个人的成长，学生自己控制上几年课，念几个学位，中间休学一下都没关系。
