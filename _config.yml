@@ -9,7 +9,6 @@ url: "https://wangqiwei366.github.io"
 baseurl: ""
 
 future: true
-limit_posts: 3
 
 # SNS settings
 RSS: false
