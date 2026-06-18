@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>网站在线运营台</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span>站</span>
+        <div>
+          <strong>在线运营台</strong>
+          <small>wangqiwei366.github.io</small>
+        </div>
+      </div>
+      <nav>
+        <button class="nav active" data-view="dashboard">总览</button>
+        <button class="nav" data-view="publish">发布新文章</button>
+        <button class="nav" data-view="posts">文章管理</button>
+        <button class="nav" data-view="progress">发布进度</button>
+      </nav>
+      <p id="statusText">等待连接 GitHub</p>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <h1 id="pageTitle">总览</h1>
+          <p id="pageSubtitle">在任何设备上管理这个 GitHub Pages 网站。</p>
+        </div>
+        <button class="primary" id="newPostBtn">发布新文章</button>
+      </header>
+
+      <section class="view active" id="dashboardView">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>GitHub 连接</h2>
+            <span class="pill" id="tokenState">未连接</span>
+          </div>
+          <div class="token-grid">
+            <label>GitHub Token
+              <input id="tokenInput" type="password" autocomplete="off" placeholder="在这台设备上粘贴 Token">
+            </label>
+            <div class="actions">
+              <button class="primary" id="saveTokenBtn">保存到本设备</button>
+              <button class="ghost" id="forgetTokenBtn">清除</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div><span>文章</span><strong id="postCount">0</strong></div>
+          <div><span>仓库</span><strong>GitHub</strong></div>
+          <div><span>状态</span><strong id="repoState">未检查</strong></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>最近文章</h2>
+            <button class="ghost" id="refreshBtn">刷新</button>
+          </div>
+          <div id="recentList" class="list"></div>
+        </div>
+      </section>
+
+      <section class="view" id="publishView">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>发布新文章</h2>
+            <button class="primary" id="publishBtn">发布</button>
+          </div>
+          <div class="form-grid">
+            <label>标题<input id="postTitle" placeholder="输入文章标题"></label>
+            <label>副标题<input id="postSubtitle" placeholder="可以不填"></label>
+            <label>日期<input id="postDate" type="datetime-local"></label>
+            <label>作者<input id="postAuthor" value="kimi"></label>
+            <label>封面图<input id="postImage" placeholder="img/home-bg.jpg 或 https://..."></label>
+            <label>标签<input id="postTags" placeholder="用逗号分隔"></label>
+          </div>
+          <textarea id="postBody" spellcheck="false" placeholder="在这里写正文，支持 Markdown。"></textarea>
+          <div class="preview" id="preview"></div>
+        </article>
+      </section>
+
+      <section class="view" id="postsView">
+        <div class="manager">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>文章列表</h2>
+              <input id="searchInput" placeholder="搜索">
+            </div>
+            <div id="postList" class="list"></div>
+          </div>
+          <article class="panel">
+            <div class="panel-head">
+              <h2 id="readerTitle">选择一篇文章</h2>
+              <button class="ghost danger" id="deleteBtn">删除文章</button>
+            </div>
+            <div class="meta" id="readerMeta">选择文章后可查看内容。</div>
+            <div class="preview" id="readerBody"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="progressView">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>发布进度</h2>
+            <button class="ghost" id="clearProgressBtn">清空</button>
+          </div>
+          <div id="progressList" class="progress-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
