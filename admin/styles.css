@@ -204,7 +204,8 @@ header p,
 .token-grid,
 .form-grid,
 .metrics,
-.manager {
+.manager,
+.about-editor {
   display: grid;
   gap: 14px;
 }
@@ -236,6 +237,15 @@ header p,
 
 .manager {
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+}
+
+.about-editor {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.about-editor textarea {
+  min-height: 300px;
 }
 
 label {
@@ -434,7 +444,8 @@ textarea:focus {
   .token-grid,
   .form-grid,
   .metrics,
-  .manager {
+  .manager,
+  .about-editor {
     grid-template-columns: 1fr;
   }
 
