@@ -19,6 +19,7 @@
         <button class="nav active" data-view="dashboard">总览</button>
         <button class="nav" data-view="publish">发布新文章</button>
         <button class="nav" data-view="posts">文章管理</button>
+        <button class="nav" data-view="about">自我介绍</button>
         <button class="nav" data-view="progress">发布进度</button>
       </nav>
       <p id="statusText">等待连接 GitHub</p>
@@ -140,6 +141,30 @@
             <div class="preview" id="readerBody"></div>
           </article>
         </div>
+      </section>
+
+      <section class="view" id="aboutView">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>自我介绍</h2>
+              <p class="meta">这里会同步到网站 About 页面。</p>
+            </div>
+            <div class="actions">
+              <button class="ghost" id="loadAboutBtn">重新载入</button>
+              <button class="primary" id="saveAboutBtn">保存自我介绍</button>
+            </div>
+          </div>
+          <div class="about-editor">
+            <label>中文介绍
+              <textarea id="aboutZh" spellcheck="false" placeholder="写中文自我介绍"></textarea>
+            </label>
+            <label>英文介绍
+              <textarea id="aboutEn" spellcheck="false" placeholder="Write the English about text"></textarea>
+            </label>
+          </div>
+          <div class="preview" id="aboutPreview"></div>
+        </article>
       </section>
 
       <section class="view" id="progressView">
