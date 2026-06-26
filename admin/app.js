@@ -4,6 +4,7 @@ const state = {
   posts: [],
   current: null,
   editing: null,
+  about: { zh: "", en: "", zhSha: "", enSha: "" },
   progress: JSON.parse(localStorage.getItem("siteAdminProgress") || "[]"),
 };
 
@@ -26,6 +27,7 @@ function setView(name) {
     dashboard: ["总览", "在任何设备上管理这个 GitHub Pages 网站。"],
     publish: [state.editing ? "修改文章" : "发布新文章", state.editing ? "保存后会覆盖原文章。" : "写完后直接发布到 GitHub。"],
     posts: ["文章管理", "查看、修改或删除已经发布的文章。"],
+    about: ["自我介绍", "修改网站 About 页面里的个人介绍。"],
     progress: ["发布进度", "查看每次操作记录。"],
   };
   $("#pageTitle").textContent = titles[name][0];
@@ -86,6 +88,15 @@ async function loadPosts() {
   state.posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
   renderPosts();
   $("#postCount").textContent = state.posts.length;
+}
+
+async function loadAbout() {
+  const result = await api("/about");
+  state.about = result.about || { zh: "", en: "", zhSha: "", enSha: "" };
+  $("#aboutZh").value = state.about.zh || "";
+  $("#aboutEn").value = state.about.en || "";
+  updateAboutPreview();
+  toast("自我介绍已载入");
 }
 
 function resetEditor() {
@@ -182,6 +193,34 @@ async function deletePost() {
   }
 }
 
+async function saveAbout() {
+  const zh = $("#aboutZh").value.trim();
+  const en = $("#aboutEn").value.trim();
+  if (!zh) return toast("先填写中文介绍");
+  if (!en) return toast("先填写英文介绍");
+  const entry = createProgress("修改自我介绍");
+  try {
+    updateProgress(entry.id, "提交到后端", 45);
+    const result = await api("/about", {
+      method: "POST",
+      body: JSON.stringify({
+        zh,
+        en,
+        zhSha: state.about.zhSha,
+        enSha: state.about.enSha,
+      }),
+    });
+    state.about = result.about;
+    updateAboutPreview();
+    updateProgress(entry.id, "保存完成，等待 GitHub Pages 刷新", 100, "About", "done");
+    toast("自我介绍已保存");
+    setView("progress");
+  } catch (error) {
+    updateProgress(entry.id, error.message, 100, "", "failed");
+    toast(error.message);
+  }
+}
+
 function renderPosts() {
   const keyword = $("#searchInput")?.value.trim().toLowerCase() || "";
   const filtered = state.posts.filter((post) => `${post.title} ${post.date} ${(post.tags || []).join(" ")}`.toLowerCase().includes(keyword));
@@ -232,6 +271,18 @@ function selectedTextArea() {
 
 function updatePreview() {
   $("#preview").innerHTML = markdown($("#postBody").value);
+}
+
+function updateAboutPreview() {
+  const zh = $("#aboutZh")?.value || "";
+  const en = $("#aboutEn")?.value || "";
+  $("#aboutPreview").innerHTML = `
+    <h3>中文预览</h3>
+    ${markdown(zh)}
+    <hr>
+    <h3>英文预览</h3>
+    ${markdown(en)}
+  `;
 }
 
 function replaceSelection(transform) {
@@ -365,6 +416,10 @@ function bind() {
     fillEditor(state.current);
   });
   $("#deleteBtn")?.addEventListener("click", deletePost);
+  $("#loadAboutBtn")?.addEventListener("click", () => loadAbout().catch((error) => toast(error.message)));
+  $("#saveAboutBtn")?.addEventListener("click", saveAbout);
+  $("#aboutZh")?.addEventListener("input", updateAboutPreview);
+  $("#aboutEn")?.addEventListener("input", updateAboutPreview);
   $("#searchInput")?.addEventListener("input", renderPosts);
   $("#postBody")?.addEventListener("input", updatePreview);
   $$(".tool-btn").forEach((button) => button.addEventListener("click", () => applyFormat(button.dataset.format)));
@@ -389,5 +444,8 @@ resetEditor();
 renderConnectionState();
 renderProgress();
 testBackend().then(() => {
-  if (state.apiBase && state.password) return loadPosts();
+  if (state.apiBase && state.password) {
+    loadAbout().catch(() => {});
+    return loadPosts();
+  }
 }).catch((error) => toast(error.message));
