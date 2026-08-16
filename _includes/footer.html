@@ -1,16 +1,14 @@
 <!-- Footer -->
-<footer>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                <!-- SNS Link -->
-                {% include sns-links.html center=true %}
-
-                <p class="copyright text-muted">
-                    Copyright &copy; {{ site.title }} {{ site.time | date: '%Y' }}
-                </p>
-            </div>
+<footer class="site-footer">
+    <div class="site-shell footer-grid">
+        <div>
+            <strong>{{ site.title }}</strong>
+            <p>{{ site.description }}</p>
         </div>
+        <div class="footer-social">
+            {% include sns-links.html center=true %}
+        </div>
+        <p class="copyright">&copy; {{ site.time | date: '%Y' }} KIMI Blog</p>
     </div>
 </footer>
 
@@ -86,7 +84,7 @@
 {% endif %}
 
 
-{% if page.title == 'Archive' %}
+{% if page.title == 'Archive' or page.title == '归档' %}
 <!-- jquery.tagcloud.js -->
 <script>
     async('{{ "/js/jquery.tagcloud.js" | prepend: site.baseurl }}', function () {

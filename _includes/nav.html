@@ -1,97 +1,50 @@
-<!-- Navigation -->
-{% if page.nav-style == "invert" or page.header-style == "text" %}
-<nav class="navbar navbar-default navbar-custom navbar-fixed-top invert">
-    {% else %}
-    <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
-        {% endif %}
-        <div class="container-fluid">
-            <!-- Brand and toggle get grouped for better mobile display -->
-            <div class="navbar-header page-scroll">
-                <button type="button" class="navbar-toggle">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="{{ site.baseurl }}/">{{ site.title }}</a>
-            </div>
-
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div id="huxblog_navbar">
-                <div class="navbar-collapse">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                            <a href="{{ site.baseurl }}/">Home</a>
-                        </li>
-                        {% for page in site.pages %}
-                        {% if page.title and page.hide-in-nav != true %}
-                        <li>
-                            <a href="{{ page.url | prepend: site.baseurl }}">{{ page.title }}</a>
-                        </li>
-                        {% endif %}
-                        {% endfor %}
-                        <li class="search-icon">
-                            <a href="javascript:void(0)">
-                                <i class="fa fa-search"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <!-- /.navbar-collapse -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top{% if page.nav-style == 'invert' or page.header-style == 'text' %} invert{% endif %}" aria-label="主导航">
+    <div class="nav-shell">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{{ site.baseurl }}/">{{ site.title }}</a>
+            <button type="button" class="navbar-toggle" aria-expanded="false" aria-controls="kimi-navbar" title="打开导航">
+                <span class="sr-only">打开导航</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+            </button>
         </div>
-        <!-- /.container -->
-    </nav>
 
-    <script>
-        // Drop Bootstarp low-performance Navbar
-        // Use customize navbar with high-quality material design animation
-        // in high-perf jank-free CSS3 implementation
-        var $body = document.body;
-        var $toggle = document.querySelector('.navbar-toggle');
-        var $navbar = document.querySelector('#huxblog_navbar');
-        var $collapse = document.querySelector('.navbar-collapse');
+        <div id="kimi-navbar" class="navbar-links">
+            <a href="{{ site.baseurl }}/#main-content"{% if page.url == '/' %} aria-current="page"{% endif %}>文章</a>
+            <a href="{{ '/archive/' | prepend: site.baseurl }}"{% if page.url == '/archive/' %} aria-current="page"{% endif %}>归档</a>
+            <a href="{{ '/about/' | prepend: site.baseurl }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>关于</a>
+            <button class="search-icon" type="button" title="搜索文章" aria-label="搜索文章">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</nav>
 
-        var __HuxNav__ = {
-            close: function () {
-                $navbar.className = " ";
-                // wait until animation end.
-                setTimeout(function () {
-                    // prevent frequently toggle
-                    if ($navbar.className.indexOf('in') < 0) {
-                        $collapse.style.height = "0px"
-                    }
-                }, 400)
-            },
-            open: function () {
-                $collapse.style.height = "auto"
-                $navbar.className += " in";
-            }
+<script>
+    (function () {
+        var toggle = document.querySelector('.navbar-toggle');
+        var links = document.querySelector('.navbar-links');
+        if (!toggle || !links) return;
+
+        function closeNavigation() {
+            links.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('title', '打开导航');
         }
 
-        // Bind Event
-        $toggle.addEventListener('click', function (e) {
-            if ($navbar.className.indexOf('in') > 0) {
-                __HuxNav__.close()
-            } else {
-                __HuxNav__.open()
-            }
-        })
+        toggle.addEventListener('click', function (event) {
+            event.stopPropagation();
+            var isOpen = links.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', String(isOpen));
+            toggle.setAttribute('title', isOpen ? '关闭导航' : '打开导航');
+        });
 
-        /**
-         * Since Fastclick is used to delegate 'touchstart' globally
-         * to hack 300ms delay in iOS by performing a fake 'click',
-         * Using 'e.stopPropagation' to stop 'touchstart' event from 
-         * $toggle/$collapse will break global delegation.
-         * 
-         * Instead, we use a 'e.target' filter to prevent handler
-         * added to document close HuxNav.  
-         *
-         * Also, we use 'click' instead of 'touchstart' as compromise
-         */
-        document.addEventListener('click', function (e) {
-            if (e.target == $toggle) return;
-            if (e.target.className == 'icon-bar') return;
-            __HuxNav__.close();
-        })
-    </script>
+        document.addEventListener('click', function (event) {
+            if (!links.contains(event.target)) closeNavigation();
+        });
+    })();
+</script>

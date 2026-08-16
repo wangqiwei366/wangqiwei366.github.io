@@ -1,14 +1,14 @@
 {
-    "name": "kimi blog",
-    "title": "kimi Blog",
-    "author": "wangqiwei366@gmail.com>",
-    "version": "1.8.2",
-    "homepage": "http://huxpro.github.io",
+    "name": "kimi-blog",
+    "title": "KIMI Blog",
+    "author": "wangqiwei366@gmail.com",
+    "version": "2.0.0",
+    "homepage": "https://wangqiwei366.github.io",
     "repository": {
         "type": "git",
-        "url": "https://github.com/Huxpro/huxpro.github.io"
+        "url": "https://github.com/wangqiwei366/wangqiwei366.github.io"
     },
-    "bugs": "https://github.com/Huxpro/huxpro.github.io/issues",
+    "bugs": "https://github.com/wangqiwei366/wangqiwei366.github.io/issues",
     "devDependencies": {
         "grunt": ">=1.3.0",
         "grunt-banner": "~0.2.3",

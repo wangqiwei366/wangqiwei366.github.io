@@ -48,7 +48,7 @@ ga_track_id:
 ga_domain: auto
 
 sidebar: true
-sidebar-about-description: ""
+sidebar-about-description: "保持判断力，持续写作，与你一起发现更大的世界。"
 sidebar-avatar: /img/favicon-haibara.png
 
 featured-tags: true

@@ -1,46 +1,105 @@
 ---
-layout: page
-description: "「离开世界之前 一切都是过程」"
+layout: default
+home: true
+description: "离开世界之前，一切都是过程。"
 ---
 
-{% for post in paginator.posts %}
-<div class="post-preview">
-    <a href="{{ post.url | prepend: site.baseurl }}">
-        <h2 class="post-title">
-            {{ post.title }}
-        </h2>
-        {% if post.subtitle %}
-        <h3 class="post-subtitle">
-            {{ post.subtitle }}
-        </h3>
-        {% endif %}
-        <div class="post-content-preview">
-            {% if post.lang == 'en' %}
-                {{ post.content | strip_html | truncate:300 }}
-            {% else %}
-                {{ post.content | strip_html | truncate:200 }}
-            {% endif %}
-        </div>
+<header class="home-hero">
+  <div class="home-hero__inner site-shell">
+    <h1>{{ site.title }}</h1>
+    <p>离开世界之前，一切都是过程。记录公共议题、社会观察与那些值得被认真讨论的时刻。</p>
+    <a class="primary-link" href="#main-content">
+      开始阅读
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M5 12h14M14 7l5 5-5 5" />
+      </svg>
     </a>
-    <p class="post-meta">
-        Posted by {% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %} on {{ post.date | date: "%B %-d, %Y" }}
-    </p>
-</div>
-<hr>
-{% endfor %}
+  </div>
+</header>
 
-<!-- Pager -->
-{% if paginator.total_pages > 1 %}
-<ul class="pager">
-    {% if paginator.previous_page %}
-    <li class="previous">
-        <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">&larr; Newer Posts</a>
-    </li>
-    {% endif %}
-    {% if paginator.next_page %}
-    <li class="next">
-        <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">Older Posts &rarr;</a>
-    </li>
-    {% endif %}
-</ul>
-{% endif %}
+<main id="main-content">
+  <section class="home-latest" aria-labelledby="latest-heading">
+    <div class="site-shell">
+      <div class="section-heading">
+        <h2 id="latest-heading">最新文章</h2>
+        <p>独立写作 · 社会观察 · {{ site.time | date: '%Y' }}</p>
+      </div>
+
+      {% for post in paginator.posts %}
+        {% if forloop.first %}
+        <article class="featured-post">
+          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%Y.%m.%d' }}</time>
+          <a class="featured-post__body" href="{{ post.url | prepend: site.baseurl }}">
+            <h3>{{ post.title }}</h3>
+            {% if post.subtitle %}<p class="post-subtitle">{{ post.subtitle }}</p>{% endif %}
+            <p class="post-excerpt">{{ post.content | strip_html | strip_newlines | truncate: 180 }}</p>
+          </a>
+          <a class="round-arrow" href="{{ post.url | prepend: site.baseurl }}" aria-label="阅读《{{ post.title }}》">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path d="M5 12h14M14 7l5 5-5 5" />
+            </svg>
+          </a>
+        </article>
+        {% else %}
+        <article class="post-row-modern">
+          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%Y.%m.%d' }}</time>
+          <a href="{{ post.url | prepend: site.baseurl }}">
+            <h3>{{ post.title }}</h3>
+            {% if post.subtitle %}<p>{{ post.subtitle }}</p>{% endif %}
+          </a>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M5 12h14M14 7l5 5-5 5" />
+          </svg>
+        </article>
+        {% endif %}
+      {% endfor %}
+
+      {% if paginator.total_pages > 1 %}
+      <nav class="pagination-modern" aria-label="文章分页">
+        {% if paginator.previous_page %}
+          <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">较新文章</a>
+        {% endif %}
+        <span>第 {{ paginator.page }} / {{ paginator.total_pages }} 页</span>
+        {% if paginator.next_page %}
+          <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">更早文章</a>
+        {% endif %}
+      </nav>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if site.tags.size > 0 %}
+  <section class="home-topics" aria-labelledby="topics-heading">
+    <div class="site-shell topics-grid">
+      <div>
+        <h2 id="topics-heading">写作主题</h2>
+        <p>把事件放回它的时代语境，寻找权力、制度与个体经验之间的联系。</p>
+      </div>
+      <div class="topic-links">
+        {% assign sorted_tags = site.tags | sort %}
+        {% for tag in sorted_tags limit: 8 %}
+        <a href="{{ site.baseurl }}/archive/?tag={{ tag[0] | url_encode }}">
+          <span>{{ tag[0] }}</span><span>{{ tag[1].size | prepend: '0' | slice: -2, 2 }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="home-about" aria-labelledby="about-heading">
+    <div class="site-shell about-grid">
+      <img src="{{ site.sidebar-avatar | prepend: site.baseurl }}" alt="KIMI Blog 头像">
+      <div>
+        <h2 id="about-heading">关于王琦玮</h2>
+        <p>{{ site.description }}</p>
+      </div>
+      <a class="text-link" href="{{ '/about/' | prepend: site.baseurl }}">
+        了解更多
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M5 12h14M14 7l5 5-5 5" />
+        </svg>
+      </a>
+    </div>
+  </section>
+</main>

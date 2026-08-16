@@ -1,7 +1,7 @@
 {
-  "name": "Hux Blog",
-  "short_name": "Hux Blog",
-  "description": "About an engineer & designer who loves web.",
+  "name": "KIMI Blog",
+  "short_name": "KIMI Blog",
+  "description": "王琦玮的个人博客，记录公共议题、社会观察与长期思考。",
   "icons": [{
     "src": "icons/128.png",
     "sizes": "128x128",
@@ -11,9 +11,9 @@
     "sizes": "512x512",
     "type": "image/png"
   }],
-  "background_color": "#fff",
-  "theme_color": "#000",
-  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#171818",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait"
 }
