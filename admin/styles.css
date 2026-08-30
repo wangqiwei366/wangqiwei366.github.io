@@ -201,6 +201,56 @@ header p,
   color: #067647;
 }
 
+.pill.bad {
+  background: #fef3f2;
+  color: var(--danger);
+}
+
+.connection-mode {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 14px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.mode-button {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.mode-button.active {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(24, 39, 75, 0.12);
+}
+
+.connection-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.connection-fields[hidden] {
+  display: none;
+}
+
+.connection-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .token-grid,
 .form-grid,
 .metrics,
@@ -439,6 +489,28 @@ textarea:focus {
   .sidebar {
     width: 100%;
     min-height: 0;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .nav {
+    width: 100%;
+    height: 38px;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  #statusText {
+    margin-top: 0;
+  }
+
+  main {
+    padding: 18px;
   }
 
   .token-grid,
@@ -452,5 +524,18 @@ textarea:focus {
   header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .connection-mode {
+    width: 100%;
+  }
+
+  .connection-actions,
+  .connection-actions .actions {
+    width: 100%;
+  }
+
+  .connection-actions button {
+    flex: 1;
   }
 }

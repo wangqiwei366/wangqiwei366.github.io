@@ -3,13 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <title>网站在线运营台</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3">
   </head>
   <body>
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark"><img src="https://raw.githubusercontent.com/wangqiwei366/wangqiwei366.github.io/master/img/favicon-haibara.png" alt=""></span>
+        <span class="brand-mark"><img src="../img/favicon-haibara.png" alt=""></span>
         <div>
           <strong>在线运营台</strong>
           <small>wangqiwei366.github.io</small>
@@ -22,7 +23,7 @@
         <button class="nav" data-view="about">自我介绍</button>
         <button class="nav" data-view="progress">发布进度</button>
       </nav>
-      <p id="statusText">等待连接 GitHub</p>
+      <p id="statusText" role="status" aria-live="polite">等待连接 GitHub</p>
     </aside>
 
     <main>
@@ -37,18 +38,25 @@
       <section class="view active" id="dashboardView">
         <div class="panel">
           <div class="panel-head">
-            <h2>私密后端连接</h2>
-            <span class="pill" id="tokenState">未连接</span>
+            <h2>连接 GitHub</h2>
+            <span class="pill" id="tokenState" aria-live="polite">未连接</span>
           </div>
-          <div class="token-grid">
-            <label>后端地址
-              <input id="apiInput" autocomplete="off" placeholder="https://...workers.dev">
+          <div class="connection-mode" role="group" aria-label="连接方式">
+            <button class="mode-button active" type="button" data-mode="github" aria-pressed="true">直接 GitHub</button>
+            <button class="mode-button" type="button" data-mode="worker" aria-pressed="false">私密后端</button>
+          </div>
+          <div class="connection-fields" id="githubConnectionFields">
+            <label>GitHub 访问令牌
+              <input id="githubTokenInput" type="password" autocomplete="off" placeholder="Fine-grained token">
             </label>
-            <label>管理密码
-              <input id="passwordInput" type="password" autocomplete="off" placeholder="输入管理密码">
-            </label>
+          </div>
+          <div class="connection-fields token-grid" id="workerConnectionFields" hidden>
+            <label>后端地址<input id="apiInput" autocomplete="off" placeholder="https://...workers.dev"></label>
+            <label>管理密码<input id="passwordInput" type="password" autocomplete="off" placeholder="输入管理密码"></label>
+          </div>
+          <div class="connection-actions">
             <div class="actions">
-              <button class="primary" id="saveTokenBtn">保存到本设备</button>
+              <button class="primary" id="saveTokenBtn">连接</button>
               <button class="ghost" id="forgetTokenBtn">清除</button>
             </div>
           </div>
@@ -178,7 +186,7 @@
       </section>
     </main>
 
-    <div class="toast" id="toast"></div>
-    <script src="app.js"></script>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js?v=3"></script>
   </body>
 </html>
