@@ -9,7 +9,7 @@
 // CACHE_NAMESPACE
 // CacheStorage is shared between all sites under same domain.
 // A namespace can prevent potential name conflicts and mis-deletion.
-const CACHE_NAMESPACE = 'kimi-v2-'
+const CACHE_NAMESPACE = 'kimi-v3-'
 
 const CACHE = CACHE_NAMESPACE + 'precache-then-runtime';
 const PRECACHE_LIST = [
@@ -116,14 +116,15 @@ self.addEventListener('install', e => {
  *  waitUntil(): activating ====> activated
  */
 self.addEventListener('activate', event => {
-  // delete old deprecated caches.
-  caches.keys().then(cacheNames => Promise.all(
-    cacheNames
-      .filter(cacheName => DEPRECATED_CACHES.includes(cacheName))
-      .map(cacheName => caches.delete(cacheName))
-  ))
   console.log('service worker activated.')
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(Promise.all([
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames
+        .filter(cacheName => cacheName !== CACHE && (cacheName.startsWith('kimi-') || DEPRECATED_CACHES.includes(cacheName)))
+        .map(cacheName => caches.delete(cacheName))
+    )),
+    self.clients.claim()
+  ]));
 });
 
 
@@ -166,8 +167,16 @@ self.addEventListener('fetch', event => {
   //console.log(` - type: ${event.request.type}; destination: ${event.request.destination}`)
   //console.log(` - mode: ${event.request.mode}, accept: ${event.request.headers.get('accept')}`)
 
+  const requestUrl = new URL(event.request.url);
+
+  // The admin console cannot work offline. Never serve stale management code.
+  if (requestUrl.hostname === self.location.hostname && (requestUrl.pathname === '/admin' || requestUrl.pathname.startsWith('/admin/'))) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
   // Skip some of cross-origin requests, like those for Google Analytics.
-  if (HOSTNAME_WHITELIST.indexOf(new URL(event.request.url).hostname) > -1) {
+  if (HOSTNAME_WHITELIST.indexOf(requestUrl.hostname) > -1) {
 
     // Redirect in SW manually fixed github pages 404s on repo?blah
     if (shouldRedirect(event.request)) {
