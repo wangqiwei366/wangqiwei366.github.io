@@ -26,7 +26,8 @@ export default {
       if (request.method === "POST" && url.pathname === "/about") return json({ ok: true, about: await saveAbout(env, await request.json()) });
       return json({ ok: false, error: "没有这个接口" }, 404);
     } catch (error) {
-      return json({ ok: false, error: error.message || String(error) }, 500);
+      const status = Number.isInteger(error?.status) && error.status >= 400 && error.status < 600 ? error.status : 500;
+      return json({ ok: false, error: error.message || String(error), status }, status);
     }
   },
 };
@@ -54,8 +55,23 @@ async function github(env, path, options = {}) {
     },
   });
   const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!response.ok) throw new Error(data.message || "GitHub 请求失败");
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const error = new Error(`GitHub 返回异常（HTTP ${response.status}）`);
+      error.status = response.status || 502;
+      error.requestPath = path;
+      throw error;
+    }
+  }
+  if (!response.ok) {
+    const error = new Error(`GitHub ${response.status}：${data.message || `请求失败（HTTP ${response.status}）`}`);
+    error.status = response.status;
+    error.requestPath = path;
+    throw error;
+  }
   return data;
 }
 
@@ -64,10 +80,11 @@ function contentsPath(path) {
 }
 
 async function listPosts(env) {
-  const files = await github(env, `${contentsPath("_posts")}?ref=${BRANCH}`);
+  const files = await github(env, `${contentsPath("_posts")}?ref=${encodeURIComponent(BRANCH)}`);
+  if (!Array.isArray(files)) throw new Error("GitHub 返回的文章目录格式异常");
   const posts = [];
   for (const file of files.filter((item) => /\.(md|markdown)$/i.test(item.name))) {
-    const detail = await github(env, `${contentsPath(file.path)}?ref=${BRANCH}`);
+    const detail = await github(env, `${contentsPath(file.path)}?ref=${encodeURIComponent(BRANCH)}`);
     const raw = decodeBase64(detail.content || "");
     const parsed = parseFrontMatter(raw);
     posts.push({
@@ -80,6 +97,7 @@ async function listPosts(env) {
       image: parsed.data["header-img"] || "",
       tags: parsed.data.tags || [],
       body: parsed.body,
+      frontMatter: parsed.frontMatter,
     });
   }
   return posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -100,7 +118,7 @@ async function savePost(env, payload) {
     author: payload.author || "kimi",
     image: payload.image || "",
     tags: Array.isArray(payload.tags) ? payload.tags : [],
-  }, body);
+  }, body, payload.frontMatter || "");
   const existingSha = payload.sha || await getSha(env, path);
   const requestBody = {
     message: existingSha ? `Update ${path}` : `Publish ${path}`,
@@ -145,22 +163,70 @@ async function getAbout(env) {
 }
 
 async function saveAbout(env, payload) {
-  const zh = String(payload.zh || "").trim();
-  const en = String(payload.en || "").trim();
-  if (!zh) throw new Error("中文自我介绍不能为空");
-  if (!en) throw new Error("英文自我介绍不能为空");
-  const zhResult = await saveTextFile(env, "_includes/about/zh.md", `${zh}\n`, payload.zhSha, "Update Chinese about text");
-  const enResult = await saveTextFile(env, "_includes/about/en.md", `${en}\n`, payload.enSha, "Update English about text");
+  // Commit both language files in one Git commit. This avoids leaving About
+  // half-updated when the second Contents API request fails.
+  const ref = await github(env, `/repos/${OWNER}/${REPO}/git/ref/heads/${encodeURIComponent(BRANCH)}`);
+  const headSha = ref.object?.sha;
+  if (!headSha) throw new Error("无法读取 GitHub 分支状态");
+  const [parent, currentZh, currentEn] = await Promise.all([
+    github(env, `/repos/${OWNER}/${REPO}/git/commits/${headSha}`),
+    readTextFile(env, "_includes/about/zh.md", headSha),
+    readTextFile(env, "_includes/about/en.md", headSha),
+  ]);
+  const zh = String(payload.zh ?? currentZh.content).trim();
+  const en = String(payload.en ?? currentEn.content).trim();
+  if (!zh && !en) throw new Error("至少填写中文或英文自我介绍");
+  if (payload.zhSha && payload.zhSha !== currentZh.sha || payload.enSha && payload.enSha !== currentEn.sha) {
+    const error = new Error("自我介绍已发生变化，请重新载入后再保存");
+    error.status = 409;
+    throw error;
+  }
+  const blobPath = `/repos/${OWNER}/${REPO}/git/blobs`;
+  const [zhBlob, enBlob] = await Promise.all([
+    github(env, blobPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: encodeBase64(`${zh}\n`), encoding: "base64" }),
+    }),
+    github(env, blobPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: encodeBase64(`${en}\n`), encoding: "base64" }),
+    }),
+  ]);
+  const baseTreeSha = parent.tree?.sha;
+  if (!baseTreeSha) throw new Error("无法读取 GitHub 文件树");
+  const tree = await github(env, `/repos/${OWNER}/${REPO}/git/trees`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      base_tree: baseTreeSha,
+      tree: [
+        { path: "_includes/about/zh.md", mode: "100644", type: "blob", sha: zhBlob.sha },
+        { path: "_includes/about/en.md", mode: "100644", type: "blob", sha: enBlob.sha },
+      ],
+    }),
+  });
+  const commit = await github(env, `/repos/${OWNER}/${REPO}/git/commits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Update About text", tree: tree.sha, parents: [headSha] }),
+  });
+  await github(env, `/repos/${OWNER}/${REPO}/git/refs/heads/${encodeURIComponent(BRANCH)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sha: commit.sha, force: false }),
+  });
   return {
     zh,
     en,
-    zhSha: zhResult.sha,
-    enSha: enResult.sha,
+    zhSha: zhBlob.sha,
+    enSha: enBlob.sha,
   };
 }
 
-async function readTextFile(env, path) {
-  const data = await github(env, `${contentsPath(path)}?ref=${BRANCH}`);
+async function readTextFile(env, path, ref = BRANCH) {
+  const data = await github(env, `${contentsPath(path)}?ref=${encodeURIComponent(ref)}`);
   return { content: decodeBase64(data.content || ""), sha: data.sha || "" };
 }
 
@@ -182,25 +248,31 @@ async function saveTextFile(env, path, content, sha, message) {
 
 async function getSha(env, path) {
   try {
-    const data = await github(env, `${contentsPath(path)}?ref=${BRANCH}`);
+    const data = await github(env, `${contentsPath(path)}?ref=${encodeURIComponent(BRANCH)}`);
     return data.sha || "";
   } catch (error) {
-    if (String(error.message || "").includes("Not Found")) return "";
+    if (error?.status === 404 || String(error.message || "").includes("Not Found")) return "";
     throw error;
   }
 }
 
 function parseFrontMatter(raw) {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!match) return { data: {}, body: raw };
+  if (!match) return { data: {}, body: raw, frontMatter: "" };
   const data = {};
   let key = "";
   for (const line of match[1].split(/\r?\n/)) {
     const pair = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (pair) {
       key = pair[1];
-      let value = pair[2].trim().replace(/^["']|["']$/g, "");
-      data[key] = value;
+      const rawValue = pair[2].trim();
+      if (!rawValue) {
+        data[key] = [];
+      } else if (/^\[.*\]$/.test(rawValue)) {
+        data[key] = rawValue.slice(1, -1).split(",").map((item) => item.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      } else {
+        data[key] = rawValue.replace(/^["']|["']$/g, "");
+      }
       continue;
     }
     const item = line.match(/^\s+-\s*(.*)$/);
@@ -209,23 +281,44 @@ function parseFrontMatter(raw) {
       data[key].push(item[1].trim());
     }
   }
-  return { data, body: raw.slice(match[0].length) };
+  return { data, body: raw.slice(match[0].length), frontMatter: match[1] };
 }
 
-function renderPost(data, body) {
+function renderPost(data, body, frontMatter = "") {
   const lines = [
     "---",
-    'layout: "post"',
+  ];
+  const preserved = preserveFrontMatter(frontMatter);
+  if (preserved.length) {
+    lines.push(...preserved);
+  } else {
+    lines.push('layout: "post"', "published: true", "hidden: false", "managed: true");
+  }
+  lines.push(
     `title: "${yaml(data.title)}"`,
     `subtitle: "${yaml(data.subtitle)}"`,
     `date: "${yaml(data.date)}"`,
     `author: "${yaml(data.author)}"`,
-  ];
+  );
   if (data.image) lines.push(`header-img: "${yaml(data.image)}"`);
-  lines.push("published: true", "hidden: false", "managed: true", "tags:");
+  lines.push("tags:");
   data.tags.filter(Boolean).forEach((tag) => lines.push(`  - ${tag}`));
   lines.push("---", "");
   return `${lines.join("\n")}${body.trim()}\n`;
+}
+
+function preserveFrontMatter(frontMatter) {
+  const controlled = new Set(["title", "subtitle", "date", "author", "header-img", "tags"]);
+  const result = [];
+  let skip = false;
+  for (const line of String(frontMatter || "").split(/\r?\n/)) {
+    const key = line.match(/^([A-Za-z0-9_-]+):(?:\s|$)/);
+    if (key) skip = controlled.has(key[1]);
+    if (!skip) result.push(line);
+  }
+  while (result.length && !result[0].trim()) result.shift();
+  while (result.length && !result[result.length - 1].trim()) result.pop();
+  return result;
 }
 
 function slug(value) {

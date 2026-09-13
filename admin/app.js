@@ -674,10 +674,11 @@ async function deletePost() {
 
 async function saveAbout() {
   if (state.connecting || state.operationBusy) return;
-  const zh = $("#aboutZh").value.trim();
-  const en = $("#aboutEn").value.trim();
-  if (!zh) return toast("先填写中文介绍");
-  if (!en) return toast("先填写英文介绍");
+  // Keep the loaded version when only one language is edited. This prevents
+  // an accidental blank textarea from blocking an otherwise valid About save.
+  const zh = $("#aboutZh").value.trim() || String(state.about.zh || "").trim();
+  const en = $("#aboutEn").value.trim() || String(state.about.en || "").trim();
+  if (!zh && !en) return toast("至少填写中文或英文介绍");
   if (!state.about.zhSha || !state.about.enSha) return toast("请先载入自我介绍再保存");
   const entry = createProgress("修改自我介绍");
   setOperationBusy(true);
