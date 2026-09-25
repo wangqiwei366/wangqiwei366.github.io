@@ -260,11 +260,33 @@ async function directListPosts() {
       author: parsed.data.author || "",
       image: parsed.data["header-img"] || "",
       tags: parsed.data.tags || [],
+      videoUrl: parsed.data.videoUrl || "",
+      videoPoster: parsed.data.videoPoster || "",
+      videoDuration: parsed.data.videoDuration || "",
       body: parsed.body,
       frontMatter: parsed.frontMatter,
     };
   }));
   return posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function validateVideoUrl(value, label) {
+  if (!value) return;
+  let url;
+  try { url = new URL(value); } catch { throw new Error(`${label}必须是 http(s) 地址`); }
+  if (!(url.protocol === "http:" || url.protocol === "https:") || !url.hostname) {
+    throw new Error(`${label}必须是 http(s) 地址`);
+  }
+}
+
+function validateVideoFields(payload) {
+  const videoUrl = String(payload.videoUrl || "").trim();
+  const videoPoster = String(payload.videoPoster || "").trim();
+  const videoDuration = String(payload.videoDuration || "").trim();
+  validateVideoUrl(videoUrl, "视频地址");
+  validateVideoUrl(videoPoster, "视频封面");
+  if (videoPoster && !videoUrl) throw new Error("填写视频封面前请先填写视频地址");
+  if (videoDuration.length > 32) throw new Error("视频时长不能超过 32 个字符");
 }
 
 async function directSavePost(payload) {
@@ -275,6 +297,7 @@ async function directSavePost(payload) {
   const date = String(payload.date || new Date().toISOString().slice(0, 10) + " 12:00:00");
   const existingPath = String(payload.path || "").replace(/^\/+/, "");
   const path = existingPath.startsWith("_posts/") ? existingPath : `_posts/${date.slice(0, 10)}-${slug(title)}.md`;
+  validateVideoFields(payload);
   const content = renderPost({
     title,
     subtitle: payload.subtitle || "",
@@ -282,6 +305,9 @@ async function directSavePost(payload) {
     author: payload.author || "kimi",
     image: payload.image || "",
     tags: Array.isArray(payload.tags) ? payload.tags : [],
+    videoUrl: payload.videoUrl || "",
+    videoPoster: payload.videoPoster || "",
+    videoDuration: payload.videoDuration || "",
   }, body, payload.frontMatter || "");
   let existingSha = String(payload.sha || "");
   if (!existingPath) {
@@ -443,6 +469,9 @@ function renderPost(data, body, frontMatter = "") {
     `author: "${yaml(data.author)}"`,
   );
   if (data.image) lines.push(`header-img: "${yaml(data.image)}"`);
+  if (data.videoUrl) lines.push(`videoUrl: "${yaml(data.videoUrl)}"`);
+  if (data.videoPoster) lines.push(`videoPoster: "${yaml(data.videoPoster)}"`);
+  if (data.videoDuration) lines.push(`videoDuration: "${yaml(data.videoDuration)}"`);
   lines.push("tags:");
   data.tags.filter(Boolean).forEach((tag) => lines.push(`  - ${tag}`));
   lines.push("---", "");
@@ -450,7 +479,7 @@ function renderPost(data, body, frontMatter = "") {
 }
 
 function preserveFrontMatter(frontMatter) {
-  const controlled = new Set(["title", "subtitle", "date", "author", "header-img", "tags"]);
+  const controlled = new Set(["title", "subtitle", "date", "author", "header-img", "tags", "videoUrl", "videoPoster", "videoDuration"]);
   const result = [];
   let skip = false;
   for (const line of String(frontMatter || "").split(/\r?\n/)) {
@@ -531,6 +560,9 @@ function resetEditor() {
   $("#postAuthor").value = "kimi";
   $("#postImage").value = "";
   $("#postTags").value = "";
+  $("#postVideoUrl").value = "";
+  $("#postVideoPoster").value = "";
+  $("#postVideoDuration").value = "";
   $("#postBody").value = "";
   $("#preview").innerHTML = "";
 }
@@ -566,8 +598,11 @@ function fillEditor(post) {
   $("#postAuthor").value = post.author || "kimi";
   $("#postImage").value = post.image || "";
   $("#postTags").value = (post.tags || []).join("，");
+  $("#postVideoUrl").value = post.videoUrl || "";
+  $("#postVideoPoster").value = post.videoPoster || "";
+  $("#postVideoDuration").value = post.videoDuration || "";
   $("#postBody").value = post.body || "";
-  $("#preview").innerHTML = markdown(post.body || "");
+  $("#preview").innerHTML = renderPostPreview(post);
   setView("publish");
 }
 
@@ -588,8 +623,16 @@ async function publishPost() {
     author: $("#postAuthor").value.trim() || "kimi",
     image: $("#postImage").value.trim(),
     tags: $("#postTags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+    videoUrl: $("#postVideoUrl").value.trim(),
+    videoPoster: $("#postVideoPoster").value.trim(),
+    videoDuration: $("#postVideoDuration").value.trim(),
     body,
   };
+  try {
+    validateVideoFields(payload);
+  } catch (error) {
+    return toast(error.message);
+  }
   if (!isEdit) {
     const candidatePath = `_posts/${payload.date.slice(0, 10)}-${slug(payload.title)}.md`;
     if (state.posts.some((post) => post.path === candidatePath)) {
@@ -713,7 +756,7 @@ function renderPosts() {
   const html = filtered.map((post) => `
     <button class="item ${state.current?.path === post.path ? "active" : ""}" data-path="${escapeHtml(post.path)}">
       <strong>${escapeHtml(post.title)}</strong>
-      <span>${escapeHtml(post.date)} · ${escapeHtml((post.tags || []).join("、"))}</span>
+      <span>${escapeHtml(post.date)} · ${escapeHtml((post.tags || []).join("、"))}${String(post.videoUrl || "").trim() ? " · ▶ 视频" : ""}</span>
     </button>
   `).join("") || `<div class="item">没有文章</div>`;
   $("#postList").innerHTML = html;
@@ -725,16 +768,24 @@ function openPost(path) {
   if (!state.current) return;
   $("#readerTitle").textContent = state.current.title;
   $("#readerMeta").textContent = `${state.current.date || ""} · ${state.current.author || ""}`;
-  $("#readerBody").innerHTML = markdown(state.current.body || "");
+  $("#readerBody").innerHTML = renderPostPreview(state.current);
   renderPosts();
   setView("posts");
 }
 
 function markdown(source) {
-  return escapeHtml(source)
-    .replace(/^\[font size=(\d+) weight=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-size:$1px;font-weight:$2">$3</p>')
-    .replace(/^\[font size=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-size:$1px">$2</p>')
-    .replace(/^\[font weight=(\d+)\](.*?)\[\/font\]$/gm, '<p style="font-weight:$1">$2</p>')
+  return restoreSafeFontSpans(escapeHtml(source))
+    // Font marks can wrap a whole paragraph or only part of a sentence. The
+    // old line-anchored expressions left inline marks visible as raw text.
+    .replace(/\[font\s+([^\]]+)\]([\s\S]*?)\[\/font\]/g, (match, attributes, text) => {
+      const styles = [];
+      String(attributes).replace(/(?:^|\s)(size|weight)=(\d+)/g, (part, name, value) => {
+        if (name === "size" && Number(value) >= 10 && Number(value) <= 72) styles.push(`font-size:${value}px`);
+        if (name === "weight" && Number(value) >= 100 && Number(value) <= 900) styles.push(`font-weight:${value}`);
+        return part;
+      });
+      return styles.length ? `<span style="${styles.join(";")}">${text}</span>` : text;
+    })
     .replace(/^---$/gm, "<hr>")
     .replace(/^### (.*)$/gm, "<h3>$1</h3>")
     .replace(/^## (.*)$/gm, "<h2>$1</h2>")
@@ -742,8 +793,11 @@ function markdown(source) {
     .replace(/^> (.*)$/gm, "<blockquote>$1</blockquote>")
     .replace(/^\d+\. (.*)$/gm, "<p class=\"ordered-line\">$1</p>")
     .replace(/^- (.*)$/gm, "<p class=\"bullet-line\">$1</p>")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    // Keep emphasis working when the selection spans more than one line.
+    // The old `.` based expressions silently left multiline formatting in the
+    // preview as raw Markdown, making the toolbar look broken on mobile.
+    .replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([\s\S]*?)\*/g, "<em>$1</em>")
     .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')
     .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
     .split(/\n{2,}/)
@@ -751,12 +805,72 @@ function markdown(source) {
     .join("");
 }
 
+function restoreSafeFontSpans(value) {
+  return String(value || "").replace(/&lt;span\s+style=&quot;([^&]*)&quot;&gt;([\s\S]*?)&lt;\/span&gt;/gi, (match, rawStyle, text) => {
+    const styles = String(rawStyle).split(";").map((part) => part.trim()).filter(Boolean).map((part) => {
+      const size = part.match(/^font-size:(\d+)px$/i);
+      if (size && Number(size[1]) >= 8 && Number(size[1]) <= 72) return `font-size:${Number(size[1])}px`;
+      const weight = part.match(/^font-weight:(\d+)$/i);
+      if (weight && Number(weight[1]) >= 100 && Number(weight[1]) <= 900) return `font-weight:${Number(weight[1])}`;
+      return "";
+    }).filter(Boolean);
+    return styles.length ? `<span style="${styles.join(";")}">${text}</span>` : match;
+  });
+}
+
+function renderVideo(videoUrl, videoPoster, videoDuration) {
+  const url = String(videoUrl || "").trim();
+  if (!url) return "";
+  if (!isHttpUrl(url)) return "";
+  const poster = String(videoPoster || "").trim();
+  const safePoster = poster && isHttpUrl(poster) ? poster : "";
+  const duration = String(videoDuration || "").trim();
+  return `<figure class="post-video"><video controls preload="metadata" playsinline${safePoster ? ` poster="${escapeHtml(safePoster)}"` : ""}><source src="${escapeHtml(url)}"></video>${duration ? `<figcaption>视频 · ${escapeHtml(duration)}</figcaption>` : ""}</figure>`;
+}
+
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return Boolean(url.hostname) && (url.protocol === "http:" || url.protocol === "https:");
+  } catch { return false; }
+}
+
+function renderPostPreview(post) {
+  return `${renderVideo(post.videoUrl, post.videoPoster, post.videoDuration)}${markdown(post.body || "")}`;
+}
+
+let rememberedBodySelection = { start: 0, end: 0 };
+
+function rememberBodySelection() {
+  const textarea = $("#postBody");
+  if (!textarea) return;
+  rememberedBodySelection = {
+    start: Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : 0,
+    end: Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : 0,
+  };
+}
+
 function selectedTextArea() {
-  return $("#postBody");
+  const textarea = $("#postBody");
+  if (!textarea) return null;
+  // Tapping a toolbar button blurs a textarea on touch browsers and can reset
+  // its selection. Restore the last range before applying the requested mark.
+  if (document.activeElement !== textarea && rememberedBodySelection) {
+    const length = textarea.value.length;
+    const start = Math.min(length, Math.max(0, rememberedBodySelection.start));
+    const end = Math.min(length, Math.max(start, rememberedBodySelection.end));
+    textarea.setSelectionRange(start, end);
+  }
+  return textarea;
 }
 
 function updatePreview() {
-  $("#preview").innerHTML = markdown($("#postBody").value);
+  $("#preview").innerHTML = renderPostPreview({
+    body: $("#postBody").value,
+    videoUrl: $("#postVideoUrl").value,
+    videoPoster: $("#postVideoPoster").value,
+    videoDuration: $("#postVideoDuration").value,
+  });
 }
 
 function updateAboutPreview() {
@@ -773,19 +887,24 @@ function updateAboutPreview() {
 
 function replaceSelection(transform) {
   const textarea = selectedTextArea();
+  if (!textarea) return;
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
   const selected = textarea.value.slice(start, end);
-  const replacement = transform(selected || "选中文字");
+  const replacement = transform(selected);
   textarea.value = textarea.value.slice(0, start) + replacement + textarea.value.slice(end);
   textarea.focus();
   textarea.setSelectionRange(start, start + replacement.length);
+  rememberedBodySelection = { start, end: start + replacement.length };
   updatePreview();
 }
 
 function applyFormat(format) {
-  const lineWrap = (prefix) => replaceSelection((text) => text.split(/\n/).map((line) => `${prefix}${line}`).join("\n"));
-  const inlineWrap = (left, right = left) => replaceSelection((text) => `${left}${text}${right}`);
+  const lineWrap = (prefix) => replaceSelection((text) => {
+    if (!text) return `${prefix}在这里输入`;
+    return text.split(/\n/).map((line) => `${prefix}${line}`).join("\n");
+  });
+  const inlineWrap = (left, right = left) => replaceSelection((text) => `${left}${text || "在这里输入"}${right}`);
   if (format === "h2") return lineWrap("## ");
   if (format === "h3") return lineWrap("### ");
   if (format === "bold") return inlineWrap("**");
@@ -795,8 +914,8 @@ function applyFormat(format) {
   if (format === "number") {
     return replaceSelection((text) => text.split(/\n/).map((line, index) => `${index + 1}. ${line}`).join("\n"));
   }
-  if (format === "link") return replaceSelection((text) => `[${text}](https://)`);
-  if (format === "image") return replaceSelection((text) => `![${text}](https://)`);
+  if (format === "link") return replaceSelection((text) => `[${text || "链接文字"}](https://)`);
+  if (format === "image") return replaceSelection((text) => `![${text || "图片描述"}](https://)`);
   if (format === "divider") return replaceSelection(() => "\n\n---\n\n");
 }
 
@@ -805,8 +924,8 @@ function applyFontStyle() {
   const weight = $("#fontWeightSelect")?.value;
   if (!size && !weight) return;
   replaceSelection((text) => {
-    const attrs = [size ? `size=${size}` : "", weight ? `weight=${weight}` : ""].filter(Boolean).join(" ");
-    return `[font ${attrs}]${text}[/font]`;
+    const styles = [size ? `font-size:${Number(size)}px` : "", weight ? `font-weight:${Number(weight)}` : ""].filter(Boolean).join(";");
+    return `<span style="${styles}">${text || "在这里输入"}</span>`;
   });
 }
 
@@ -946,8 +1065,19 @@ function bind() {
     updateAboutPreview();
   });
   $("#searchInput")?.addEventListener("input", renderPosts);
-  $("#postBody")?.addEventListener("input", updatePreview);
-  $$(".tool-btn").forEach((button) => button.addEventListener("click", () => applyFormat(button.dataset.format)));
+  $("#postBody")?.addEventListener("input", () => { rememberBodySelection(); updatePreview(); });
+  $("#postBody")?.addEventListener("select", rememberBodySelection);
+  $("#postBody")?.addEventListener("keyup", rememberBodySelection);
+  $("#postBody")?.addEventListener("blur", rememberBodySelection);
+  ["#postVideoUrl", "#postVideoPoster", "#postVideoDuration"].forEach((selector) => $(selector)?.addEventListener("input", updatePreview));
+  $$(".tool-btn").forEach((button) => {
+    // Preserve the textarea caret when a formatting button is tapped on a
+    // phone. `mousedown` is cancelled so the button does not steal focus;
+    // `selectedTextArea` also restores the saved range for touch browsers.
+    button.type = "button";
+    button.addEventListener("mousedown", (event) => event.preventDefault());
+    button.addEventListener("click", () => applyFormat(button.dataset.format));
+  });
   $("#applyFontBtn")?.addEventListener("click", applyFontStyle);
   $("#postList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-path]");

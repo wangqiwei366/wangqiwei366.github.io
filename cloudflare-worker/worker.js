@@ -61,13 +61,15 @@ async function github(env, path, options = {}) {
       data = JSON.parse(text);
     } catch {
       const error = new Error(`GitHub 返回异常（HTTP ${response.status}）`);
-      Object.assign(error, { status: response.status || 502, requestPath: path });
+      error.status = response.status || 502;
+      error.requestPath = path;
       throw error;
     }
   }
   if (!response.ok) {
     const error = new Error(`GitHub ${response.status}：${data.message || `请求失败（HTTP ${response.status}）`}`);
-    Object.assign(error, { status: response.status, requestPath: path });
+    error.status = response.status;
+    error.requestPath = path;
     throw error;
   }
   return data;
@@ -94,11 +96,28 @@ async function listPosts(env) {
       author: parsed.data.author || "",
       image: parsed.data["header-img"] || "",
       tags: parsed.data.tags || [],
+      videoUrl: parsed.data.videoUrl || "",
+      videoPoster: parsed.data.videoPoster || "",
+      videoDuration: parsed.data.videoDuration || "",
       body: parsed.body,
       frontMatter: parsed.frontMatter,
     });
   }
   return posts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function validateVideoFields(payload) {
+  const videoUrl = String(payload.videoUrl || "").trim();
+  const videoPoster = String(payload.videoPoster || "").trim();
+  const videoDuration = String(payload.videoDuration || "").trim();
+  for (const [value, label] of [[videoUrl, "视频地址"], [videoPoster, "视频封面"]]) {
+    if (!value) continue;
+    let url;
+    try { url = new URL(value); } catch { throw new Error(`${label}必须是 http(s) 地址`); }
+    if (!(url.protocol === "http:" || url.protocol === "https:") || !url.hostname) throw new Error(`${label}必须是 http(s) 地址`);
+  }
+  if (videoPoster && !videoUrl) throw new Error("填写视频封面前请先填写视频地址");
+  if (videoDuration.length > 32) throw new Error("视频时长不能超过 32 个字符");
 }
 
 async function savePost(env, payload) {
@@ -109,6 +128,7 @@ async function savePost(env, payload) {
   const date = String(payload.date || new Date().toISOString().slice(0, 10) + " 12:00:00");
   const existingPath = String(payload.path || "").replace(/^\/+/, "");
   const path = existingPath.startsWith("_posts/") ? existingPath : `_posts/${date.slice(0, 10)}-${slug(title)}.md`;
+  validateVideoFields(payload);
   const content = renderPost({
     title,
     subtitle: payload.subtitle || "",
@@ -116,6 +136,9 @@ async function savePost(env, payload) {
     author: payload.author || "kimi",
     image: payload.image || "",
     tags: Array.isArray(payload.tags) ? payload.tags : [],
+    videoUrl: payload.videoUrl || "",
+    videoPoster: payload.videoPoster || "",
+    videoDuration: payload.videoDuration || "",
   }, body, payload.frontMatter || "");
   const existingSha = payload.sha || await getSha(env, path);
   const requestBody = {
@@ -176,7 +199,7 @@ async function saveAbout(env, payload) {
   if (!zh && !en) throw new Error("至少填写中文或英文自我介绍");
   if (payload.zhSha && payload.zhSha !== currentZh.sha || payload.enSha && payload.enSha !== currentEn.sha) {
     const error = new Error("自我介绍已发生变化，请重新载入后再保存");
-    Object.assign(error, { status: 409 });
+    error.status = 409;
     throw error;
   }
   const blobPath = `/repos/${OWNER}/${REPO}/git/blobs`;
@@ -299,6 +322,9 @@ function renderPost(data, body, frontMatter = "") {
     `author: "${yaml(data.author)}"`,
   );
   if (data.image) lines.push(`header-img: "${yaml(data.image)}"`);
+  if (data.videoUrl) lines.push(`videoUrl: "${yaml(data.videoUrl)}"`);
+  if (data.videoPoster) lines.push(`videoPoster: "${yaml(data.videoPoster)}"`);
+  if (data.videoDuration) lines.push(`videoDuration: "${yaml(data.videoDuration)}"`);
   lines.push("tags:");
   data.tags.filter(Boolean).forEach((tag) => lines.push(`  - ${tag}`));
   lines.push("---", "");
@@ -306,7 +332,7 @@ function renderPost(data, body, frontMatter = "") {
 }
 
 function preserveFrontMatter(frontMatter) {
-  const controlled = new Set(["title", "subtitle", "date", "author", "header-img", "tags"]);
+  const controlled = new Set(["title", "subtitle", "date", "author", "header-img", "tags", "videoUrl", "videoPoster", "videoDuration"]);
   const result = [];
   let skip = false;
   for (const line of String(frontMatter || "").split(/\r?\n/)) {
