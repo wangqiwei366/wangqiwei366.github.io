@@ -61,15 +61,13 @@ async function github(env, path, options = {}) {
       data = JSON.parse(text);
     } catch {
       const error = new Error(`GitHub 返回异常（HTTP ${response.status}）`);
-      error.status = response.status || 502;
-      error.requestPath = path;
+      Object.assign(error, { status: response.status || 502, requestPath: path });
       throw error;
     }
   }
   if (!response.ok) {
     const error = new Error(`GitHub ${response.status}：${data.message || `请求失败（HTTP ${response.status}）`}`);
-    error.status = response.status;
-    error.requestPath = path;
+    Object.assign(error, { status: response.status, requestPath: path });
     throw error;
   }
   return data;
@@ -178,7 +176,7 @@ async function saveAbout(env, payload) {
   if (!zh && !en) throw new Error("至少填写中文或英文自我介绍");
   if (payload.zhSha && payload.zhSha !== currentZh.sha || payload.enSha && payload.enSha !== currentEn.sha) {
     const error = new Error("自我介绍已发生变化，请重新载入后再保存");
-    error.status = 409;
+    Object.assign(error, { status: 409 });
     throw error;
   }
   const blobPath = `/repos/${OWNER}/${REPO}/git/blobs`;
