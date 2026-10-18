@@ -16,14 +16,15 @@
 <script src="{{ "/js/jquery.min.js " | prepend: site.baseurl }}"></script>
 
 <!-- Bootstrap Core JavaScript -->
-<!-- Currently, only navbar scroll-down effect at desktop still depends on this -->
+<!-- Bootstrap still provides the legacy collapse helpers; navigation
+     hide/show on every viewport is handled by liquid-glass.js below. -->
 <script src="{{ "/js/bootstrap.min.js " | prepend: site.baseurl }}"></script>
 
 <!-- Custom Theme JavaScript -->
 <script src="{{ "/js/hux-blog.min.js " | prepend: site.baseurl }}"></script>
 
-<!-- Pointer light and touch feedback for liquid glass surfaces -->
-<script src="{{ "/js/liquid-glass.js?v=liquid-glass-6" | prepend: site.baseurl }}"></script>
+<!-- Theme switching and responsive navigation scroll visibility -->
+<script src="{{ "/js/liquid-glass.js?v=solid-surfaces-7" | prepend: site.baseurl }}"></script>
 
 <!-- Simple Jekyll Search -->
 <script src="{{ "/js/simple-jekyll-search.min.js" | prepend: site.baseurl }}"></script>
