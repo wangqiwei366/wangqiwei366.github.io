@@ -27,7 +27,7 @@ description: "离开世界之前，一切都是过程。"
 
       {% for post in paginator.posts %}
         {% if forloop.first %}
-        <article class="featured-post">
+        <article class="featured-post glass-card">
           <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%Y.%m.%d' }}</time>
           <a class="featured-post__body" href="{{ post.url | prepend: site.baseurl }}">
             <h3>{{ post.title }}</h3>
@@ -41,7 +41,7 @@ description: "离开世界之前，一切都是过程。"
           </a>
         </article>
         {% else %}
-        <article class="post-row-modern">
+        <article class="post-row-modern glass-card">
           <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%Y.%m.%d' }}</time>
           <a href="{{ post.url | prepend: site.baseurl }}">
             <h3>{{ post.title }}</h3>
