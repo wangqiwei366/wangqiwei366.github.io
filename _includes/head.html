@@ -11,8 +11,7 @@
         (function () {
             try {
                 var savedTheme = localStorage.getItem('kimi-theme');
-                var systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-                document.documentElement.setAttribute('data-theme', savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : (systemLight ? 'light' : 'dark'));
+                document.documentElement.setAttribute('data-theme', savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark');
             } catch (error) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
@@ -61,7 +60,7 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ " /css/hux-blog.min.css" | prepend: site.baseurl }}">
-    <link rel="stylesheet" href="{{ " /css/kimi-modern.css?v=liquid-glass-3" | prepend: site.baseurl }}">
+    <link rel="stylesheet" href="{{ " /css/kimi-modern.css?v=liquid-glass-4" | prepend: site.baseurl }}">
 
     <!-- Custom Fonts -->
     <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
