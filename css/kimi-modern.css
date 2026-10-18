@@ -2539,6 +2539,11 @@ html[data-theme="dark"] .site-heading .subheading {
   text-shadow: 0 1px 16px rgba(0, 0, 0, .24);
 }
 
+html[data-theme="dark"] .page-content,
+html[data-theme="dark"] .layout-post .post-container {
+  color: #f7fbff;
+}
+
 @media (max-width: 780px) {
   header.intro-header .site-heading,
   header.intro-header .post-heading {
