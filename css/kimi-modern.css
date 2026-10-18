@@ -2193,8 +2193,8 @@ header.intro-header.style-text .site-heading {
 }
 
 @keyframes glass-rise {
-  from { opacity: 0; transform: translateY(14px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .home-latest .glass-card:nth-of-type(2) { animation-delay: .08s; }
@@ -2374,5 +2374,247 @@ header.intro-header.style-text .site-heading {
   .mini-post-list .post-preview {
     margin-inline: 4px;
     padding: 24px 23px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Liquid glass 7 / centered surfaces / elastic pointer motion                */
+/* -------------------------------------------------------------------------- */
+
+:root {
+  --glass-surface: rgba(17, 34, 52, .18);
+}
+
+html[data-theme="light"] {
+  --glass-surface: rgba(255, 255, 255, .26);
+}
+
+.glass-card {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --glass-lift: 0px;
+  width: auto;
+  margin-inline: auto;
+  will-change: auto;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .018) 42%, rgba(135, 192, 255, .04)),
+    var(--glass-surface);
+  transform: perspective(900px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x)) translateY(var(--glass-lift));
+  transition: transform .36s cubic-bezier(.2, .85, .25, 1.2), border-color .22s ease, box-shadow .34s ease;
+}
+
+.glass-card::after {
+  opacity: 0;
+  transition: opacity .2s ease, background-position .2s ease;
+}
+
+html[data-theme="light"] .glass-card::after {
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-card:hover {
+    --glass-lift: -4px;
+    transform: perspective(900px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x)) translateY(var(--glass-lift));
+  }
+
+  .glass-card.is-pointer-active {
+    --glass-lift: -6px;
+    will-change: transform;
+    background:
+      radial-gradient(250px 175px at var(--pointer-x) var(--pointer-y), rgba(190, 240, 255, .11), transparent 72%),
+      linear-gradient(135deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .018) 42%, rgba(135, 192, 255, .045)),
+      var(--glass-surface);
+    box-shadow: 0 28px 74px rgba(0, 10, 26, .29), 0 0 24px rgba(108, 214, 246, .1), inset 0 1px 0 rgba(255, 255, 255, .28);
+    transform: perspective(900px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x)) translateY(var(--glass-lift));
+  }
+
+  .glass-card.is-pointer-active::before {
+    background: radial-gradient(240px 170px at var(--pointer-x) var(--pointer-y), rgba(225, 249, 255, .22), transparent 72%);
+    opacity: .92;
+  }
+
+  .glass-card.is-pointer-active::after {
+    opacity: .72;
+    background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, .34) 48%, transparent 68%);
+    background-size: 220% 100%;
+    animation: glass-sheen 1.65s ease-in-out infinite;
+  }
+}
+
+.glass-card.is-touch-active {
+  --glass-lift: -3px;
+  will-change: transform;
+  transform: perspective(900px) rotateX(0deg) rotateY(0deg) translateY(var(--glass-lift));
+}
+
+.glass-card.is-touch-active::after {
+  opacity: .66;
+}
+
+@keyframes glass-sheen {
+  0%, 100% { background-position: 120% 0; }
+  50% { background-position: -20% 0; }
+}
+
+/* The title cards and reading surfaces share the same centered column. */
+header.intro-header .site-heading,
+header.intro-header .post-heading {
+  width: min(100%, 840px);
+  margin-inline: auto;
+}
+
+.page-main > .reading-shell.page-content.glass-card,
+.layout-post article > .container > .row > .post-container.glass-card {
+  width: min(calc(100% - (var(--kimi-gutter) * 2)), var(--kimi-reading));
+  margin-inline: auto;
+}
+
+.layout-post .post-container .pager a.glass-card {
+  width: auto;
+  margin-inline: 0;
+}
+
+.page-content .post-container {
+  color: rgba(235, 244, 251, .92);
+}
+
+.page-content .post-container h1,
+.page-content .post-container h2,
+.page-content .post-container h3,
+.page-content .post-container h4 {
+  color: #f7fbff;
+}
+
+.page-content .post-container a {
+  color: #bceeff;
+}
+
+.featured-post .post-subtitle {
+  color: #d8f4ff;
+  text-shadow: 0 1px 12px rgba(105, 210, 240, .12);
+}
+
+html[data-theme="light"] .glass-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .12) 42%, rgba(151, 218, 255, .11)),
+    var(--glass-surface);
+}
+
+html[data-theme="light"] .glass-card.is-pointer-active {
+  background:
+    radial-gradient(250px 175px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, .34), transparent 72%),
+    linear-gradient(135deg, rgba(255, 255, 255, .36), rgba(255, 255, 255, .12) 42%, rgba(151, 218, 255, .12)),
+    var(--glass-surface);
+}
+
+html[data-theme="light"] .page-content .post-container {
+  color: rgba(26, 52, 70, .88);
+}
+
+html[data-theme="light"] .page-content .post-container h1,
+html[data-theme="light"] .page-content .post-container h2,
+html[data-theme="light"] .page-content .post-container h3,
+html[data-theme="light"] .page-content .post-container h4 {
+  color: #163047;
+}
+
+html[data-theme="light"] .page-content .post-container a {
+  color: #1c718b;
+}
+
+html[data-theme="light"] .featured-post .post-subtitle {
+  color: #163047;
+  text-shadow: none;
+}
+
+html[data-theme="light"] .post-heading .subheading,
+html[data-theme="light"] .site-heading .subheading {
+  color: #102a3d;
+}
+
+html[data-theme="dark"] .post-heading .subheading,
+html[data-theme="dark"] .site-heading .subheading {
+  color: #f7fbff;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, .24);
+}
+
+@media (max-width: 780px) {
+  header.intro-header .site-heading,
+  header.intro-header .post-heading {
+    width: 100%;
+  }
+
+  .page-main > .reading-shell.page-content.glass-card,
+  .layout-post article > .container > .row > .post-container.glass-card {
+    width: calc(100% - 24px);
+    margin-inline: auto;
+  }
+
+  .featured-post,
+  .post-row-modern,
+  .mini-post-list .post-preview {
+    margin-inline: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card,
+  .glass-card:hover,
+  .glass-card.is-pointer-active,
+  .glass-card.is-touch-active {
+    will-change: auto;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .glass-card.is-pointer-active::after,
+  .glass-card.is-touch-active::after {
+    animation: none !important;
+  }
+}
+/* Image-backed headers stay bright in light mode; text headers use dark ink. */
+html[data-theme="light"] header.intro-header:not(.style-text) .site-heading .subheading,
+html[data-theme="light"] header.intro-header:not(.style-text) .post-heading .subheading,
+html[data-theme="light"] header.intro-header:not(.style-text) .post-heading .meta {
+  color: #f1fbff;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, .28);
+}
+
+html[data-theme="light"] .text-header-page header.intro-header .site-heading .subheading,
+html[data-theme="light"] .text-header-page header.intro-header .post-heading .subheading,
+html[data-theme="light"] header.intro-header.style-text .site-heading .subheading,
+html[data-theme="light"] header.intro-header.style-text .post-heading .subheading {
+  color: #102a3d;
+  text-shadow: none;
+}
+/* Keep the light glass airy and see-through. */
+html[data-theme="light"] {
+  --glass-surface: rgba(255, 255, 255, .18);
+}
+
+html[data-theme="light"] .glass-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .06) 42%, rgba(151, 218, 255, .06)),
+    var(--glass-surface);
+}
+
+html[data-theme="light"] .glass-card.is-pointer-active {
+  background:
+    radial-gradient(250px 175px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, .22), transparent 72%),
+    linear-gradient(135deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .06) 42%, rgba(151, 218, 255, .07)),
+    var(--glass-surface);
+}
+.glass-card {
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@media (max-width: 780px) {
+  .glass-card {
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
   }
 }
