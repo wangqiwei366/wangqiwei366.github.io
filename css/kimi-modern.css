@@ -2623,3 +2623,505 @@ html[data-theme="light"] .glass-card.is-pointer-active {
     -webkit-backdrop-filter: blur(16px) saturate(140%);
   }
 }
+
+/* Responsive geometry and navigation alignment                               */
+/* -------------------------------------------------------------------------- */
+
+/* Scroll hiding is applied by liquid-glass.js on every viewport size. Keeping the
+ * transition on the outer nav avoids shifting the pill contents while it
+ * leaves the screen. */
+.navbar-custom,
+.navbar-custom.is-fixed,
+.navbar-custom.is-visible,
+.navbar-custom.is-hidden {
+  transition: transform .28s cubic-bezier(.22, .8, .28, 1);
+}
+
+.navbar-custom.nav-scroll-hidden {
+  transform: translate3d(0, -140%, 0) !important;
+  pointer-events: none !important;
+}
+
+/* The old mobile rule changed the search button to a left-justified flex row.
+ * Keep the hit area circular while centering the SVG on every device ratio. */
+.navbar-custom .search-icon {
+  display: grid;
+  place-items: center;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex: 0 0 auto;
+}
+
+.navbar-custom .search-icon svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.navbar-custom .theme-toggle {
+  display: grid;
+  place-items: center;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex: 0 0 auto;
+}
+
+.navbar-custom .theme-toggle svg {
+  display: block;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Use one centered column for archive content. The legacy Bootstrap row and
+ * the late glass-card margins otherwise leave cards glued to one edge. */
+.layout-default > .container {
+  width: min(calc(100% - (var(--kimi-gutter) * 2)), var(--kimi-reading));
+  max-width: var(--kimi-reading);
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
+.layout-default > .container > .row,
+.layout-default > .container > .row > [class*="col-"] {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.mini-post-list {
+  width: 100%;
+  min-width: 0;
+}
+
+.mini-post-list .listing-seperator {
+  display: block;
+  margin: clamp(30px, 4vw, 48px) 0 clamp(12px, 2vw, 20px);
+}
+
+.mini-post-list .post-preview {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: clamp(20px, 3.5vw, 32px) clamp(18px, 4vw, 36px);
+}
+
+.mini-post-list .post-preview + .post-preview {
+  margin-top: clamp(12px, 2vw, 20px);
+}
+
+/* Tablets and small laptops need a fluid gutter instead of switching abruptly
+ * at the 780px phone breakpoint. This also handles foldables in either axis. */
+@media (min-width: 781px) and (max-width: 1199px) {
+  :root {
+    --kimi-gutter: clamp(22px, 4vw, 38px);
+  }
+
+  .navbar-custom .nav-shell {
+    width: min(calc(100% - (var(--kimi-gutter) * 2)), 1080px);
+  }
+
+  .featured-post,
+  .post-row-modern {
+    margin-inline: 0;
+  }
+
+  .layout-default > .container {
+    width: min(calc(100% - (var(--kimi-gutter) * 2)), var(--kimi-reading));
+  }
+}
+
+@media (max-width: 780px) {
+  :root {
+    --kimi-gutter: clamp(14px, 5vw, 24px);
+  }
+
+  .navbar-custom.nav-scroll-hidden {
+    transform: translate3d(0, calc(140% + env(safe-area-inset-bottom)), 0) !important;
+  }
+
+  .navbar-custom .nav-shell {
+    width: min(calc(100% - (var(--kimi-gutter) * 2)), 560px);
+    max-width: calc(100vw - (var(--kimi-gutter) * 2));
+  }
+
+  .navbar-custom .navbar-links {
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .navbar-custom .navbar-links > a {
+    flex: 1 1 42px;
+    min-width: 0;
+    max-width: 58px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .navbar-custom .search-icon {
+    width: clamp(38px, 11vw, 46px);
+    height: clamp(38px, 11vw, 46px);
+    min-width: 38px;
+    border-radius: 50%;
+  }
+
+  .navbar-custom .search-icon svg {
+    width: clamp(18px, 5.5vw, 21px);
+    height: clamp(18px, 5.5vw, 21px);
+  }
+
+  .layout-default > .container,
+  .page-main > .reading-shell.page-content.glass-card,
+  .layout-post article > .container > .row > .post-container.glass-card {
+    width: calc(100% - (var(--kimi-gutter) * 2));
+    max-width: var(--kimi-reading);
+  }
+
+  .mini-post-list .post-preview {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  #tag_cloud {
+    gap: 8px;
+    margin-bottom: clamp(32px, 8vw, 52px);
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --kimi-gutter: 12px;
+  }
+
+  .navbar-custom .nav-shell {
+    width: calc(100% - 24px);
+    padding-inline: 10px;
+  }
+
+  .navbar-custom .navbar-brand {
+    max-width: 54px;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navbar-custom .navbar-links > a {
+    flex-basis: 34px;
+    font-size: 11px;
+  }
+
+  .navbar-custom .search-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  .navbar-custom .theme-toggle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mini-post-list .post-preview {
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 300px) {
+  .navbar-custom .nav-shell {
+    width: calc(100% - 16px);
+    padding-inline: 6px;
+  }
+
+  .navbar-custom .navbar-brand {
+    max-width: 32px;
+    font-size: 11px;
+  }
+
+  .navbar-custom .navbar-links > a {
+    flex-basis: 24px;
+    font-size: 10px;
+  }
+
+  .navbar-custom .search-icon,
+  .navbar-custom .theme-toggle {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .navbar-custom .search-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (min-width: 781px) and (orientation: landscape) and (max-height: 560px) {
+  .navbar-custom .nav-shell {
+    height: 56px;
+  }
+
+  .navbar-custom {
+    top: 10px !important;
+  }
+
+  .home-hero {
+    min-height: 480px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Solid surfaces                                                             */
+/*                                                                            */
+/* Keep the existing card/nav geometry and hover affordances, but remove the  */
+/* translucent glass treatment.  These rules intentionally sit last so they  */
+/* win over the older liquid-glass cascade above.                             */
+/* -------------------------------------------------------------------------- */
+
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: #fff !important;
+}
+
+html[data-theme="light"] body {
+  color: var(--kimi-ink);
+}
+
+html[data-theme="light"] body::before,
+html[data-theme="light"] body::after,
+body::before,
+body::after {
+  display: none !important;
+  animation: none !important;
+  background: none !important;
+  filter: none !important;
+}
+
+html[data-theme="light"] main,
+html[data-theme="light"] .home-latest,
+html[data-theme="light"] .home-about,
+html[data-theme="light"] .home-topics,
+html[data-theme="light"] .site-footer,
+html[data-theme="light"] .layout-post article,
+html[data-theme="light"] .layout-default > .container,
+html[data-theme="light"] .page-main {
+  color: var(--kimi-ink);
+  background: #fff !important;
+}
+
+html[data-theme="light"] .home-topics {
+  color: var(--kimi-ink) !important;
+}
+
+/* Desktop and mobile nav shells use a solid, high-contrast white surface. */
+.navbar-custom .nav-shell {
+  border: 1px solid #e3e7ea !important;
+  background: #fff !important;
+  box-shadow: 0 10px 28px rgba(20, 32, 44, .1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.navbar-custom .nav-shell::before {
+  display: none !important;
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-links > a,
+.navbar-custom .search-icon,
+.navbar-custom .navbar-toggle,
+.navbar-custom .theme-toggle,
+.navbar-custom.is-fixed .navbar-brand,
+.navbar-custom.is-fixed .navbar-links > a,
+.navbar-custom.is-fixed .search-icon,
+.navbar-custom.is-fixed .navbar-toggle,
+.navbar-custom.is-fixed .theme-toggle,
+.navbar-custom.is-visible .navbar-brand,
+.navbar-custom.is-visible .navbar-links > a,
+.navbar-custom.is-visible .search-icon,
+.navbar-custom.is-visible .navbar-toggle,
+.navbar-custom.is-visible .theme-toggle,
+.navbar-custom.is-hidden .navbar-brand,
+.navbar-custom.is-hidden .navbar-links > a,
+.navbar-custom.is-hidden .search-icon,
+.navbar-custom.is-hidden .navbar-toggle,
+.navbar-custom.is-hidden .theme-toggle {
+  color: #17212b !important;
+}
+
+.navbar-custom .search-icon,
+.navbar-custom .navbar-toggle,
+.navbar-custom .theme-toggle,
+.navbar-custom.invert .search-icon,
+.navbar-custom.invert .navbar-toggle {
+  border-color: #d7dee3 !important;
+  background: #fff !important;
+}
+
+html[data-theme="light"] .navbar-custom .search-icon,
+html[data-theme="light"] .navbar-custom .navbar-toggle,
+html[data-theme="light"] .navbar-custom .theme-toggle,
+html[data-theme="dark"] .navbar-custom .search-icon,
+html[data-theme="dark"] .navbar-custom .navbar-toggle,
+html[data-theme="dark"] .navbar-custom .theme-toggle {
+  border-color: #d7dee3 !important;
+  background: #fff !important;
+}
+
+.navbar-custom .search-icon:hover,
+.navbar-custom .search-icon:focus-visible,
+.navbar-custom .navbar-toggle:hover,
+.navbar-custom .navbar-toggle:focus-visible,
+.navbar-custom .theme-toggle:hover,
+.navbar-custom .theme-toggle:focus-visible,
+.navbar-custom .navbar-links > a:hover,
+.navbar-custom .navbar-links > a:focus-visible,
+.navbar-custom .navbar-links > a[aria-current="page"] {
+  color: #17212b !important;
+  border-color: #b8c3ca !important;
+  background: #f4f7f8 !important;
+  box-shadow: none !important;
+}
+
+/* Cards remain rounded and lift slightly on interaction, without glass blur,
+   gradients, pointer light fields, or a 3D tilt. */
+.glass-card,
+.glass-card.is-pointer-active,
+.glass-card.is-touch-active,
+html[data-theme="light"] .glass-card,
+html[data-theme="light"] .glass-card.is-pointer-active,
+html[data-theme="light"] .glass-card.is-touch-active {
+  border: 1px solid #e1e6e9 !important;
+  background: #fff !important;
+  box-shadow: 0 10px 30px rgba(20, 32, 44, .08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transform: translateY(0) !important;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease !important;
+}
+
+.glass-card::before,
+.glass-card::after,
+.glass-card.is-pointer-active::before,
+.glass-card.is-pointer-active::after,
+.glass-card.is-touch-active::before,
+.glass-card.is-touch-active::after {
+  display: none !important;
+  animation: none !important;
+  background: none !important;
+  opacity: 0 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-card:hover,
+  .glass-card.is-pointer-active {
+    border-color: #cbd5da !important;
+    background: #fff !important;
+    box-shadow: 0 16px 36px rgba(20, 32, 44, .13) !important;
+    transform: translateY(-3px) !important;
+  }
+}
+
+.glass-card.is-touch-active {
+  border-color: #cbd5da !important;
+  box-shadow: 0 14px 32px rgba(20, 32, 44, .12) !important;
+  transform: translateY(-2px) !important;
+}
+
+.round-arrow,
+#tag_cloud a {
+  border-color: #d7dee3 !important;
+  color: #17212b !important;
+  background: #fff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.round-arrow:hover,
+.round-arrow:focus,
+#tag_cloud a:hover,
+#tag_cloud a.focus {
+  border-color: #b8c3ca !important;
+  color: #17212b !important;
+  background: #f4f7f8 !important;
+}
+
+/* Heading surfaces are cards too; keep them opaque over image headers. */
+header.intro-header .site-heading,
+header.intro-header .post-heading,
+.text-header-page header.intro-header .site-heading,
+header.intro-header.style-text .site-heading {
+  border: 1px solid #e1e6e9 !important;
+  border-radius: 22px;
+  color: #17212b !important;
+  background: #fff !important;
+  box-shadow: 0 10px 30px rgba(20, 32, 44, .1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+header.intro-header .site-heading .subheading,
+header.intro-header .post-heading .subheading,
+header.intro-header .post-heading .meta,
+header.intro-header .post-heading .tags a {
+  color: #42515c !important;
+  text-shadow: none !important;
+}
+
+/* Search uses a solid white dialog as well. */
+.search-page {
+  background: #fff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.search-shell {
+  border: 1px solid #e1e6e9 !important;
+  background: #fff !important;
+  box-shadow: 0 16px 40px rgba(20, 32, 44, .12) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.search-shell label,
+#search-results .post-preview h2,
+#search-input {
+  color: #17212b !important;
+}
+
+#search-input {
+  border-bottom-color: #cbd5da !important;
+}
+
+#search-input::placeholder,
+#search-results .post-preview h3 {
+  color: #687781 !important;
+}
+
+.search-icon-close {
+  border-color: #d7dee3 !important;
+  color: #17212b !important;
+  background: #fff !important;
+}
+
+/* Keep the magnifier optically centered inside its circular hit area. The
+ * previous glass hover rule rotated the whole button, which made the icon
+ * appear off-center during pointer transitions. */
+.navbar-custom .search-icon,
+.navbar-custom .search-icon:hover,
+.navbar-custom .search-icon:focus-visible {
+  transform: none !important;
+}
+
+.navbar-custom .search-icon svg {
+  transform: translate(-.35px, -.35px);
+  transform-origin: center;
+}
