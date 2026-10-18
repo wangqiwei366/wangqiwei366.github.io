@@ -3154,3 +3154,8 @@ html[data-theme="dark"] .glass-card .post-heading,
 html[data-theme="dark"] .glass-card .post-tags {
   color: #42515c !important;
 }
+
+/* Give the archive title a little more breathing room from the left edge. */
+#tag-heading > h1 {
+  padding-left: clamp(8px, 1.2vw, 12px);
+}
