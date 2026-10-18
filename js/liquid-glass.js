@@ -44,87 +44,58 @@
         }
     });
 
-    var cards = document.querySelectorAll('.glass-card');
-    if (!cards.length) return;
+    // Keep the navigation out of the way while reading.  The same direction
+    // logic is used for the top navigation on desktop and the bottom dock on
+    // phones/tablets; CSS decides which edge the hidden state leaves from.
+    (function setupNavigationScroll() {
+        var nav = document.querySelector('.navbar-custom');
+        if (!nav) return;
 
-    var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    function setLight(card, clientX, clientY) {
-        var rect = card._glassRect || card.getBoundingClientRect();
-        var x = (clientX - rect.left) / rect.width;
-        var y = (clientY - rect.top) / rect.height;
-        var clampedX = Math.max(0, Math.min(1, x));
-        var clampedY = Math.max(0, Math.min(1, y));
-        card.style.setProperty('--pointer-x', (clampedX * 100) + '%');
-        card.style.setProperty('--pointer-y', (clampedY * 100) + '%');
-        card.style.setProperty('--tilt-x', (((clampedX - .5) * 4.5).toFixed(2)) + 'deg');
-        card.style.setProperty('--tilt-y', (((.5 - clampedY) * 4.5).toFixed(2)) + 'deg');
-    }
-
-    Array.prototype.forEach.call(cards, function (card) {
+        var lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
         var frame = 0;
-        var resetTimer;
+        var threshold = 3;
 
-        card.addEventListener('pointerenter', function (event) {
-            if (reducedMotion || event.pointerType !== 'mouse') return;
-            card._glassRect = card.getBoundingClientRect();
-            card.classList.add('is-pointer-active');
-        }, { passive: true });
-
-        card.addEventListener('pointermove', function (event) {
-            if (reducedMotion || event.pointerType !== 'mouse') return;
-            card._pointerX = event.clientX;
-            card._pointerY = event.clientY;
-            card.classList.add('is-pointer-active');
-            if (frame) return;
-            frame = window.requestAnimationFrame(function () {
-                setLight(card, card._pointerX, card._pointerY);
-                frame = 0;
-            });
-        }, { passive: true });
-
-        card.addEventListener('pointerdown', function (event) {
-            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-            card._glassRect = card.getBoundingClientRect();
-            setLight(card, event.clientX, event.clientY);
-            card.style.setProperty('--tilt-x', '0deg');
-            card.style.setProperty('--tilt-y', '0deg');
-            card.classList.add('is-touch-active');
-            window.clearTimeout(resetTimer);
-            resetTimer = window.setTimeout(function () {
-                card.classList.remove('is-touch-active');
-                card.style.setProperty('--tilt-x', '0deg');
-                card.style.setProperty('--tilt-y', '0deg');
-            }, 520);
-        }, { passive: true });
-
-        function clearPointerLight() {
-            if (frame) window.cancelAnimationFrame(frame);
-            frame = 0;
-            card.classList.remove('is-pointer-active');
-            card.style.setProperty('--pointer-x', '50%');
-            card.style.setProperty('--pointer-y', '0%');
-            card.style.setProperty('--tilt-x', '0deg');
-            card.style.setProperty('--tilt-y', '0deg');
-            card._glassRect = null;
+        function setVisible(visible) {
+            nav.classList.toggle('nav-scroll-hidden', !visible);
+            nav.setAttribute('data-scroll-state', visible ? 'visible' : 'hidden');
         }
 
-        card.addEventListener('pointerleave', clearPointerLight, { passive: true });
-        card.addEventListener('pointercancel', function () {
-            clearPointerLight();
-            window.clearTimeout(resetTimer);
-            card.classList.remove('is-touch-active');
+        function readScroll() {
+            frame = 0;
+            var currentY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+            var delta = currentY - lastY;
+
+            // Always restore the dock at the top of a page, including after
+            // iOS rubber-band scrolling reports a negative scroll position.
+            if (currentY <= 12) {
+                setVisible(true);
+            } else if (Math.abs(delta) >= threshold) {
+                // Scrolling the document down hides the dock; reversing
+                // direction reveals it again.
+                setVisible(delta < 0);
+            }
+            lastY = currentY;
+        }
+
+        function scheduleScrollRead() {
+            if (frame) return;
+            frame = window.requestAnimationFrame(readScroll);
+        }
+
+        setVisible(true);
+        window.addEventListener('scroll', scheduleScrollRead, { passive: true });
+        window.addEventListener('resize', function () {
+            lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+            setVisible(true);
         }, { passive: true });
 
-        card.addEventListener('pointerup', function () {
-            if (card.classList.contains('is-touch-active')) {
-                window.clearTimeout(resetTimer);
-                resetTimer = window.setTimeout(function () {
-                    card.classList.remove('is-touch-active');
-                    card.style.setProperty('--tilt-x', '0deg');
-                    card.style.setProperty('--tilt-y', '0deg');
-                }, 260);
+        // Opening search should never leave the trigger hidden behind the
+        // search sheet.  This also gives keyboard users a stable focus target.
+        nav.addEventListener('click', function (event) {
+            if (event.target.closest && event.target.closest('.search-icon')) {
+                setVisible(true);
             }
-        }, { passive: true });
-    });
+        });
+    }());
+
 }());
