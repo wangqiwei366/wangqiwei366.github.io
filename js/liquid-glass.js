@@ -12,7 +12,7 @@
             stored = null;
         }
         if (stored === 'light' || stored === 'dark') return stored;
-        return 'dark';
+        return 'light';
     }
 
     function updateThemeButtons(theme) {
@@ -49,12 +49,16 @@
 
     var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function setLight(card, event) {
-        var rect = card.getBoundingClientRect();
-        var x = ((event.clientX - rect.left) / rect.width) * 100;
-        var y = ((event.clientY - rect.top) / rect.height) * 100;
-        card.style.setProperty('--pointer-x', Math.max(0, Math.min(100, x)) + '%');
-        card.style.setProperty('--pointer-y', Math.max(0, Math.min(100, y)) + '%');
+    function setLight(card, clientX, clientY) {
+        var rect = card._glassRect || card.getBoundingClientRect();
+        var x = (clientX - rect.left) / rect.width;
+        var y = (clientY - rect.top) / rect.height;
+        var clampedX = Math.max(0, Math.min(1, x));
+        var clampedY = Math.max(0, Math.min(1, y));
+        card.style.setProperty('--pointer-x', (clampedX * 100) + '%');
+        card.style.setProperty('--pointer-y', (clampedY * 100) + '%');
+        card.style.setProperty('--tilt-x', (((clampedX - .5) * 4.5).toFixed(2)) + 'deg');
+        card.style.setProperty('--tilt-y', (((.5 - clampedY) * 4.5).toFixed(2)) + 'deg');
     }
 
     Array.prototype.forEach.call(cards, function (card) {
@@ -62,26 +66,35 @@
         var resetTimer;
 
         card.addEventListener('pointerenter', function (event) {
-            if (event.pointerType === 'mouse') card.classList.add('is-pointer-active');
+            if (reducedMotion || event.pointerType !== 'mouse') return;
+            card._glassRect = card.getBoundingClientRect();
+            card.classList.add('is-pointer-active');
         }, { passive: true });
 
         card.addEventListener('pointermove', function (event) {
             if (reducedMotion || event.pointerType !== 'mouse') return;
+            card._pointerX = event.clientX;
+            card._pointerY = event.clientY;
             card.classList.add('is-pointer-active');
             if (frame) return;
             frame = window.requestAnimationFrame(function () {
-                setLight(card, event);
+                setLight(card, card._pointerX, card._pointerY);
                 frame = 0;
             });
         }, { passive: true });
 
         card.addEventListener('pointerdown', function (event) {
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
-            setLight(card, event);
+            card._glassRect = card.getBoundingClientRect();
+            setLight(card, event.clientX, event.clientY);
+            card.style.setProperty('--tilt-x', '0deg');
+            card.style.setProperty('--tilt-y', '0deg');
             card.classList.add('is-touch-active');
             window.clearTimeout(resetTimer);
             resetTimer = window.setTimeout(function () {
                 card.classList.remove('is-touch-active');
+                card.style.setProperty('--tilt-x', '0deg');
+                card.style.setProperty('--tilt-y', '0deg');
             }, 520);
         }, { passive: true });
 
@@ -91,6 +104,9 @@
             card.classList.remove('is-pointer-active');
             card.style.setProperty('--pointer-x', '50%');
             card.style.setProperty('--pointer-y', '0%');
+            card.style.setProperty('--tilt-x', '0deg');
+            card.style.setProperty('--tilt-y', '0deg');
+            card._glassRect = null;
         }
 
         card.addEventListener('pointerleave', clearPointerLight, { passive: true });
@@ -105,6 +121,8 @@
                 window.clearTimeout(resetTimer);
                 resetTimer = window.setTimeout(function () {
                     card.classList.remove('is-touch-active');
+                    card.style.setProperty('--tilt-x', '0deg');
+                    card.style.setProperty('--tilt-y', '0deg');
                 }, 260);
             }
         }, { passive: true });
