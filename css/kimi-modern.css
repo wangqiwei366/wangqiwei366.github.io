@@ -1471,6 +1471,25 @@ main,
   background: rgba(227, 246, 255, .08) !important;
 }
 
+.navbar-custom.is-fixed .navbar-brand,
+.navbar-custom.is-fixed .navbar-links > a,
+.navbar-custom.is-fixed .search-icon,
+.navbar-custom.is-fixed .navbar-toggle,
+.navbar-custom.is-visible .navbar-brand,
+.navbar-custom.is-visible .navbar-links > a,
+.navbar-custom.is-visible .search-icon,
+.navbar-custom.is-visible .navbar-toggle {
+  color: var(--glass-ink) !important;
+}
+
+.navbar-custom.is-fixed .search-icon,
+.navbar-custom.is-fixed .navbar-toggle,
+.navbar-custom.is-visible .search-icon,
+.navbar-custom.is-visible .navbar-toggle {
+  border-color: rgba(225, 242, 255, .38) !important;
+  background: rgba(227, 246, 255, .08) !important;
+}
+
 /* Reusable glass cards with a pointer-driven light field. */
 .glass-card {
   --pointer-x: 50%;
