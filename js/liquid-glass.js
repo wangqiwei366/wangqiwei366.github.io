@@ -12,7 +12,7 @@
             stored = null;
         }
         if (stored === 'light' || stored === 'dark') return stored;
-        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        return 'dark';
     }
 
     function updateThemeButtons(theme) {
