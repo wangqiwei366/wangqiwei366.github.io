@@ -3125,3 +3125,32 @@ header.intro-header .post-heading .tags a {
   transform: translate(-.35px, -.35px);
   transform-origin: center;
 }
+
+/* Dark mode keeps its page backdrop, while the now-opaque white cards need
+ * their own dark ink so body copy never disappears against the surface. */
+html[data-theme="dark"] .glass-card,
+html[data-theme="dark"] .glass-card p,
+html[data-theme="dark"] .glass-card h1,
+html[data-theme="dark"] .glass-card h2,
+html[data-theme="dark"] .glass-card h3,
+html[data-theme="dark"] .glass-card h4,
+html[data-theme="dark"] .glass-card h5,
+html[data-theme="dark"] .glass-card h6,
+html[data-theme="dark"] .glass-card li,
+html[data-theme="dark"] .glass-card blockquote {
+  color: #17212b !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="dark"] .glass-card a {
+  color: #1f657d !important;
+}
+
+html[data-theme="dark"] .glass-card time,
+html[data-theme="dark"] .glass-card .post-subtitle,
+html[data-theme="dark"] .glass-card .post-excerpt,
+html[data-theme="dark"] .glass-card .post-meta,
+html[data-theme="dark"] .glass-card .post-heading,
+html[data-theme="dark"] .glass-card .post-tags {
+  color: #42515c !important;
+}
