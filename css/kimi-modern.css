@@ -3160,3 +3160,8 @@ html[data-theme="dark"] .glass-card .post-tags {
 #tag-heading > .subheading {
   padding-left: clamp(8px, 1.2vw, 12px);
 }
+
+/* Tighten the archive cards vertically while keeping comfortable side gutters. */
+.mini-post-list .post-preview {
+  padding-block: clamp(14px, 2.2vw, 22px);
+}
