@@ -140,6 +140,13 @@
       form.classList.toggle("is-busy", busy);
     }
 
+    function serviceErrorMessage(error) {
+      if (error && (error.status === 401 || error.status === 503)) {
+        return "评论服务尚未上线，请稍后刷新页面。";
+      }
+      return "评论加载失败，请稍后刷新页面重试。";
+    }
+
     function selectAuthTab(tab) {
       root.querySelectorAll("[data-auth-tab]").forEach(function (button) {
         var active = button.dataset.authTab === tab;
@@ -164,10 +171,11 @@
           renderComments();
           setStatus("");
         })
-        .catch(function () {
-          elements.list.replaceChildren(createElement("p", "comments-empty", "评论加载失败，请稍后刷新页面重试。"));
+        .catch(function (error) {
+          var message = serviceErrorMessage(error);
+          elements.list.replaceChildren(createElement("p", "comments-empty", message));
           elements.count.textContent = "评论暂不可用";
-          setStatus("加载失败", "error");
+          setStatus(message, "error");
         });
     }
 
