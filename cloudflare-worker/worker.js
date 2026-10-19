@@ -5,19 +5,32 @@ const BRANCH = "master";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type,X-Admin-Password",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Password",
 };
+
+const PASSWORD_ITERATIONS = 120000;
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const MAX_NICKNAME_LENGTH = 40;
+const MAX_COMMENT_LENGTH = 2000;
+const MAX_ARTICLE_LENGTH = 300;
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return json({ ok: true });
     try {
+      const url = new URL(request.url);
+      // Public comment and account endpoints must remain usable without the
+      // private admin password. The existing content-management routes below
+      // keep their original X-Admin-Password protection.
+      if (isPublicRoute(request.method, url.pathname)) {
+        return await handlePublicRoute(request, env, url);
+      }
+
       if (!env.GITHUB_TOKEN) throw new Error("Worker missing GITHUB_TOKEN");
       if (!env.ADMIN_PASSWORD) throw new Error("Worker missing ADMIN_PASSWORD");
       const password = request.headers.get("X-Admin-Password") || "";
       if (password !== env.ADMIN_PASSWORD) return json({ ok: false, error: "管理密码不正确" }, 401);
 
-      const url = new URL(request.url);
       if (request.method === "GET" && url.pathname === "/health") return json({ ok: true, repo: `${OWNER}/${REPO}` });
       if (request.method === "GET" && url.pathname === "/posts") return json({ ok: true, posts: await listPosts(env) });
       if (request.method === "POST" && url.pathname === "/posts") return json({ ok: true, post: await savePost(env, await request.json()) });
@@ -32,6 +45,52 @@ export default {
   },
 };
 
+function isPublicRoute(method, pathname) {
+  return (method === "GET" && (pathname === "/comments" || pathname === "/auth/me"))
+    || (method === "POST" && (pathname === "/comments" || pathname === "/auth/register" || pathname === "/auth/login" || pathname === "/auth/logout"));
+}
+
+async function handlePublicRoute(request, env, url) {
+  if (request.method === "GET" && url.pathname === "/comments") {
+    const article = normalizeArticleId(url.searchParams.get("article") || url.searchParams.get("post") || url.searchParams.get("path"));
+    if (!article) throw httpError(400, "缺少文章标识");
+    const db = requireDatabase(env);
+    const result = await db.prepare("SELECT id, article_id AS articleId, user_id AS userId, nickname, body, created_at AS createdAt FROM comments WHERE article_id = ? ORDER BY created_at ASC").bind(article).all();
+    const comments = Array.isArray(result.results) ? result.results : [];
+    return json({ ok: true, comments });
+  }
+
+  if (request.method === "POST" && url.pathname === "/auth/register") {
+    const payload = await parseJsonBody(request);
+    return json({ ok: true, user: await registerUser(env, payload) }, 201);
+  }
+
+  if (request.method === "POST" && url.pathname === "/auth/login") {
+    const payload = await parseJsonBody(request);
+    const result = await loginUser(env, payload);
+    return json({ ok: true, ...result });
+  }
+
+  if (request.method === "GET" && url.pathname === "/auth/me") {
+    const session = await authenticate(request, env);
+    return json({ ok: true, user: session ? publicUser(session.user) : null });
+  }
+
+  if (request.method === "POST" && url.pathname === "/auth/logout") {
+    await logoutSession(request, env);
+    return json({ ok: true });
+  }
+
+  if (request.method === "POST" && url.pathname === "/comments") {
+    const session = await requireAuthentication(request, env);
+    const payload = await parseJsonBody(request);
+    const comment = await createComment(env, session.user, payload);
+    return json({ ok: true, comment }, 201);
+  }
+
+  return json({ ok: false, error: "没有这个接口" }, 404);
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -41,6 +100,198 @@ function json(body, status = 200) {
       "Cache-Control": "no-store",
     },
   });
+}
+
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function parseJsonBody(request) {
+  try {
+    const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
+    return body;
+  } catch {
+    throw httpError(400, "请求内容不是有效的 JSON");
+  }
+}
+
+function normalizeArticleId(value) {
+  const article = String(value || "").trim();
+  if (!article || article.length > MAX_ARTICLE_LENGTH || /[\u0000-\u001f\u007f]/.test(article)) return "";
+  return article;
+}
+
+function publicUser(user) {
+  return {
+    id: String(user.id),
+    nickname: String(user.nickname),
+    createdAt: String(user.createdAt || user.created_at || ""),
+  };
+}
+
+function requireDatabase(env) {
+  if (!env.DB || typeof env.DB.prepare !== "function") {
+    throw httpError(503, "评论服务尚未配置 Cloudflare D1，请为 Worker 绑定名为 DB 的 D1 数据库并执行 schema.sql");
+  }
+  return env.DB;
+}
+
+function cleanNickname(value) {
+  const nickname = String(value || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+  if (!nickname) throw httpError(400, "请设置昵称");
+  if (nickname.length > MAX_NICKNAME_LENGTH) throw httpError(400, `昵称不能超过 ${MAX_NICKNAME_LENGTH} 个字符`);
+  return nickname;
+}
+
+function validatePassword(value) {
+  const password = String(value || "");
+  if (password.length < 8) throw httpError(400, "密码至少需要 8 个字符");
+  if (password.length > 128) throw httpError(400, "密码不能超过 128 个字符");
+  return password;
+}
+
+function generateUserId() {
+  const bytes = new Uint8Array(9);
+  crypto.getRandomValues(bytes);
+  return `U${bytesToBase64Url(bytes).toUpperCase()}`;
+}
+
+async function registerUser(env, payload) {
+  const nickname = cleanNickname(payload.nickname);
+  const password = validatePassword(payload.password);
+  const db = requireDatabase(env);
+  const passwordSalt = new Uint8Array(16);
+  crypto.getRandomValues(passwordSalt);
+  const passwordHash = await derivePasswordHash(password, passwordSalt);
+  const createdAt = new Date().toISOString();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const id = generateUserId();
+    try {
+      await db.prepare("INSERT INTO users (id, nickname, password_hash, password_salt, iterations, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(id, nickname, passwordHash, bytesToBase64Url(passwordSalt), PASSWORD_ITERATIONS, createdAt).run();
+      return publicUser({ id, nickname, createdAt });
+    } catch (error) {
+      if (!/unique|constraint/i.test(String(error?.message || "")) || attempt === 2) throw error;
+    }
+  }
+  throw new Error("注册失败，请稍后重试");
+}
+
+async function loginUser(env, payload) {
+  const id = String(payload.id || payload.userId || "").trim();
+  const password = String(payload.password || "");
+  if (!id || !password) throw httpError(400, "请输入用户 ID 和密码");
+  const db = requireDatabase(env);
+  const user = await db.prepare("SELECT id, nickname, password_hash AS passwordHash, password_salt AS passwordSalt, iterations, created_at AS createdAt FROM users WHERE id = ?").bind(id).first();
+  if (!user || !(await verifyPassword(password, user))) throw httpError(401, "用户 ID 或密码不正确");
+  const token = await createSessionToken(env, user);
+  const tokenHash = await hashSessionToken(token);
+  const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+  await db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, user.id, expiresAt, new Date().toISOString()).run();
+  return { token, expiresAt: new Date(expiresAt * 1000).toISOString(), user: publicUser(user) };
+}
+
+async function createComment(env, user, payload) {
+  const articleId = normalizeArticleId(payload.articleId || payload.article || payload.post || payload.path);
+  const body = String(payload.body ?? payload.content ?? payload.text ?? "").trim();
+  if (!articleId) throw httpError(400, "缺少文章标识");
+  if (!body) throw httpError(400, "评论内容不能为空");
+  if (body.length > MAX_COMMENT_LENGTH) throw httpError(400, `评论不能超过 ${MAX_COMMENT_LENGTH} 个字符`);
+  const comment = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${generateUserId()}`,
+    articleId,
+    userId: String(user.id),
+    nickname: String(user.nickname),
+    body,
+    createdAt: new Date().toISOString(),
+  };
+  const db = requireDatabase(env);
+  await db.prepare("INSERT INTO comments (id, article_id, user_id, nickname, body, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(comment.id, comment.articleId, comment.userId, comment.nickname, comment.body, comment.createdAt).run();
+  return comment;
+}
+
+async function requireAuthentication(request, env) {
+  const session = await authenticate(request, env);
+  if (!session) throw httpError(401, "请先登录后再评论");
+  return session;
+}
+
+async function authenticate(request, env) {
+  const header = request.headers.get("Authorization") || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const db = requireDatabase(env);
+  try {
+    const token = match[1].trim();
+    if (!token || token.length > 512) return null;
+    const tokenHash = await hashSessionToken(token);
+    const now = Math.floor(Date.now() / 1000);
+    const session = await db.prepare("SELECT u.id, u.nickname, u.created_at AS createdAt, s.expires_at AS expiresAt FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?").bind(tokenHash).first();
+    if (!session || Number(session.expiresAt) <= now) {
+      if (session) await db.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
+      return null;
+    }
+    return { user: session.user || session };
+  } catch {
+    return null;
+  }
+}
+
+async function derivePasswordHash(password, salt, iterations = PASSWORD_ITERATIONS) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256);
+  return bytesToBase64Url(new Uint8Array(bits));
+}
+
+async function verifyPassword(password, user) {
+  const salt = base64UrlToBytes(user.passwordSalt);
+  const hash = await derivePasswordHash(password, salt, Number(user.iterations) || PASSWORD_ITERATIONS);
+  return constantTimeEqual(base64UrlToBytes(hash), base64UrlToBytes(user.passwordHash));
+}
+
+async function createSessionToken(env, user) {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return bytesToBase64Url(bytes);
+}
+
+async function hashSessionToken(token) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return bytesToBase64Url(new Uint8Array(digest));
+}
+
+async function logoutSession(request, env) {
+  const header = request.headers.get("Authorization") || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return;
+  const token = match[1].trim();
+  if (!token) return;
+  const db = requireDatabase(env);
+  await db.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await hashSessionToken(token)).run();
+}
+
+function constantTimeEqual(left, right) {
+  if (!(left instanceof Uint8Array) || !(right instanceof Uint8Array) || left.length !== right.length) return false;
+  let result = 0;
+  for (let index = 0; index < left.length; index += 1) result |= left[index] ^ right[index];
+  return result === 0;
+}
+
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlToBytes(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
 async function github(env, path, options = {}) {
