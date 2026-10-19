@@ -1,0 +1,69 @@
+{% assign comments_api = site.comment_api_url | default: site.comments_api_url | default: 'https://wangqiwei366-site-admin.wangqiwei366.workers.dev' %}
+<section class="site-comments" data-comments-root
+    data-api-base="{{ comments_api | escape }}"
+    data-article-id="{{ page.url | replace: 'index.html', '' | escape }}"
+    aria-labelledby="comments-title">
+    <div class="comments-heading">
+        <div>
+            <h2 id="comments-title">评论</h2>
+            <p class="comments-count" data-comments-count>正在加载</p>
+        </div>
+        <span class="comments-status" data-comments-status role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="comments-list" data-comments-list aria-live="polite">
+        <p class="comments-empty">正在加载评论……</p>
+    </div>
+
+    <div class="comments-account" data-comments-account>
+        <div class="comments-user" data-comments-user hidden>
+            <div class="comments-user-info">
+                <span>已登录为</span>
+                <strong data-user-nickname></strong>
+                <code data-user-id></code>
+            </div>
+            <button class="comments-button comments-button-secondary" type="button" data-logout>退出登录</button>
+        </div>
+
+        <div class="comments-auth" data-comments-auth>
+            <div class="comments-auth-head">
+                <div>
+                    <h3>登录后参与评论</h3>
+                    <p>注册时会自动生成独一无二的用户 ID。</p>
+                </div>
+                <div class="comments-tabs" role="tablist" aria-label="账户操作">
+                    <button class="comments-tab is-active" type="button" data-auth-tab="login" role="tab" aria-selected="true">登录</button>
+                    <button class="comments-tab" type="button" data-auth-tab="register" role="tab" aria-selected="false">注册</button>
+                </div>
+            </div>
+
+            <form class="comments-form" data-auth-form="login">
+                <div class="comments-fields comments-fields-login">
+                    <label>用户 ID<input name="id" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="例如 UABC123"></label>
+                    <label>密码<input name="password" type="password" required autocomplete="current-password" placeholder="至少 8 个字符"></label>
+                </div>
+                <button class="comments-button" type="submit">登录</button>
+            </form>
+
+            <form class="comments-form" data-auth-form="register" hidden>
+                <div class="comments-fields comments-fields-register">
+                    <label>昵称<input name="nickname" required maxlength="40" autocomplete="nickname" placeholder="显示在评论旁的名字"></label>
+                    <label>密码<input name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="至少 8 个字符"></label>
+                    <label>确认密码<input name="passwordConfirm" type="password" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="再次输入密码"></label>
+                </div>
+                <button class="comments-button" type="submit">注册</button>
+            </form>
+            <p class="comments-message" data-auth-message role="status" aria-live="polite"></p>
+        </div>
+
+        <form class="comments-form comments-compose" data-comment-form hidden>
+            <label class="comments-compose-label" for="comment-body-{{ page.id | slugify }}">写下你的评论</label>
+            <textarea id="comment-body-{{ page.id | slugify }}" name="body" maxlength="2000" required rows="4" placeholder="分享你的想法……"></textarea>
+            <div class="comments-compose-footer">
+                <span>最多 2000 个字符</span>
+                <button class="comments-button" type="submit">发表评论</button>
+            </div>
+        </form>
+    </div>
+</section>
+<script src="{{ '/js/comments.js?v=2' | prepend: site.baseurl }}" defer></script>
