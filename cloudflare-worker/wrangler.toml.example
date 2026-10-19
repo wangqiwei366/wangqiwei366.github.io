@@ -1,0 +1,12 @@
+name = "wangqiwei366-site-admin"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wangqiwei366-comments"
+database_id = "replace-with-your-d1-database-id"
+
+# Set these with `wrangler secret put`:
+#   GITHUB_TOKEN
+#   ADMIN_PASSWORD
