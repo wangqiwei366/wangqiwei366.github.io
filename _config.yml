@@ -7,6 +7,7 @@ description: "这里是 @王琦玮 的个人博客，与你一起发现更大的
 keyword: "王琦玮, KIMI王琦玮, KIMI, 鬼栈, KIMIpro, @KIMIpro, 王琦玮的博客, KIMI Blog, 博客, 个人网站, 互联网, Web"
 url: "https://kimi-wang.space"
 baseurl: ""
+comments_api_url: "https://wangqiwei366-site-admin.wangqiwei366.workers.dev"
 
 future: true
 
