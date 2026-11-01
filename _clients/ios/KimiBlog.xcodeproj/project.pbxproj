@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000011 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* Fonts */; };
 		A10000000000000000000001 /* KimiBlogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* KimiBlogApp.swift */; };
 		A10000000000000000000002 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* HomeView.swift */; };
 		A10000000000000000000003 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* LibraryView.swift */; };
@@ -24,6 +25,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B10000000000000000000011 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fonts; sourceTree = "<group>"; };
 		B10000000000000000000000 /* KimiBlog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KimiBlog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000001 /* KimiBlogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiBlogApp.swift; sourceTree = "<group>"; };
 		B10000000000000000000002 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 				B10000000000000000000008 /* SettingsView.swift */,
 				B10000000000000000000009 /* Storage.swift */,
 				B1000000000000000000000A /* Assets.xcassets */,
+				B10000000000000000000011 /* Fonts */,
 				B1000000000000000000000B /* snapshot.json */,
 				B1000000000000000000000E /* Info.plist */,
 			);
@@ -184,6 +187,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000A /* Assets.xcassets in Resources */,
+				A10000000000000000000011 /* Fonts in Resources */,
 				A1000000000000000000000B /* snapshot.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

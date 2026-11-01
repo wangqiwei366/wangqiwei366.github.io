@@ -4,7 +4,7 @@ import UIKit
 
 final class NativeReaderTests: XCTestCase {
     func testWebsiteSerifFontResolvesWithoutSansFallback() {
-        XCTAssertNotNil(UIFont(name: "STSongti-SC-Regular", size: 17), "Website reader font must resolve to a real Songti face")
+        XCTAssertNotNil(UIFont(name: "KimiReadingSerif-Regular", size: 17), "Bundled Chinese serif font must resolve without a system download")
     }
     func testLongArticleIsNotTruncated() {
         let paragraph = String(repeating: "这是完整的正文。", count: 2000)

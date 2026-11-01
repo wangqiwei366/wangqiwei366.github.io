@@ -17,7 +17,7 @@ enum Palette {
     static let teal = adaptive(0x1F657D, 0x91C9DE)
     static let paper = adaptive(0xFFFFFF, 0x17212B)
     static let charcoal = Color(red: 23 / 255, green: 33 / 255, blue: 43 / 255)
-    static func serif(_ size: CGFloat) -> Font { .custom("STSongti-SC-Regular", size: size) }
+    static func serif(_ size: CGFloat) -> Font { .custom("KimiReadingSerif-Regular", size: size) }
 }
 
 struct WebsiteCard: ViewModifier {
