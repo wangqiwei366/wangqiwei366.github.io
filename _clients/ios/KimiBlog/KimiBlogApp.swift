@@ -17,7 +17,7 @@ enum Palette {
     static let teal = adaptive(0x1F657D, 0x91C9DE)
     static let paper = adaptive(0xFFFFFF, 0x17212B)
     static let charcoal = Color(red: 23 / 255, green: 33 / 255, blue: 43 / 255)
-    static func serif(_ size: CGFloat) -> Font { .custom("SongtiSC-Regular", size: size) }
+    static func serif(_ size: CGFloat) -> Font { .custom("STSongti-SC-Regular", size: size) }
 }
 
 struct WebsiteCard: ViewModifier {
@@ -44,7 +44,7 @@ struct WebsiteHeader: View {
                 Color.black.opacity(0.38)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title).font(Palette.serif(sizeClass == .regular ? 58 : 38))
-                        .foregroundStyle(Palette.ink).lineSpacing(3)
+                        .foregroundStyle(Palette.body).lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                     if !subtitle.isEmpty {
                         Text(subtitle).font(Palette.serif(18)).foregroundStyle(Palette.body)

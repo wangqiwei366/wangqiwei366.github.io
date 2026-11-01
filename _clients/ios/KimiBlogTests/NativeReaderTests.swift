@@ -1,7 +1,11 @@
 import XCTest
+import UIKit
 @testable import KimiBlog
 
 final class NativeReaderTests: XCTestCase {
+    func testWebsiteSerifFontResolvesWithoutSansFallback() {
+        XCTAssertNotNil(UIFont(name: "STSongti-SC-Regular", size: 17), "Website reader font must resolve to a real Songti face")
+    }
     func testLongArticleIsNotTruncated() {
         let paragraph = String(repeating: "这是完整的正文。", count: 2000)
         let blocks = NativeHTML.blocks("<h2>标题</h2><p>\(paragraph)</p><p>最后一段。</p>")

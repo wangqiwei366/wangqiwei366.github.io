@@ -15,7 +15,7 @@ struct HomeView: View {
             ScrollViewReader { position in
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
-                        HomeHero(width: viewport.size.width, height: max(620, UIScreen.main.bounds.height * 0.82)) {
+                        HomeHero(width: viewport.size.width, height: viewport.size.width >= 780 ? min(760, max(620, (viewport.size.height + 83) * 0.76)) : max(620, (viewport.size.height + 83) * 0.82)) {
                             withAnimation { position.scrollTo("latest", anchor: .top) }
                         }
                         VStack(alignment: .leading, spacing: 20) {
