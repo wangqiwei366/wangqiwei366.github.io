@@ -3590,27 +3590,11 @@ html[data-theme="dark"] .glass-card .post-tags {
   display: inline-flex !important;
   align-items: center;
   gap: 7px;
-  min-height: 38px;
-  padding: 0 13px !important;
-  border: 1px solid #17212b;
-  border-radius: 999px;
-  color: #fff !important;
-  background: #17212b;
-  transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease !important;
 }
 
 .nav-download-link svg {
   width: 15px;
   height: 15px;
-}
-
-.nav-download-link:hover,
-.nav-download-link:focus-visible,
-.nav-download-link[aria-current="page"] {
-  border-color: var(--kimi-red) !important;
-  color: #fff !important;
-  background: var(--kimi-red) !important;
-  transform: translateY(-1px);
 }
 
 .download-page {
@@ -3781,12 +3765,6 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 }
 
 .download-badge--ready,
-.download-badge--source {
-  border-color: rgba(255, 255, 255, .28);
-  color: #fff;
-  background: rgba(255, 255, 255, .1);
-}
-
 .download-badge--available {
   border-color: rgba(53, 109, 105, .28);
   color: var(--kimi-teal);
@@ -3838,9 +3816,12 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 }
 
 .download-action {
+  width: 150px;
+  flex: 0 0 150px;
   min-height: 42px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   padding: 0 15px;
   border: 1px solid #17212b;
@@ -3867,7 +3848,7 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 
 .download-action--primary {
   color: #17212b;
-  border-color: #fff;
+  border-color: #17212b;
   background: #fff;
 }
 
@@ -3879,19 +3860,17 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 }
 
 .download-action--secondary {
-  min-height: 36px;
-  padding-inline: 12px;
-  border-color: #d7dee3;
-  color: var(--kimi-teal);
-  background: #f4f7f8;
-  font-size: 12px;
+  border-color: #17212b;
+  color: #17212b;
+  background: #fff;
+  font-size: 13px;
 }
 
 .download-action--secondary:hover,
 .download-action--secondary:focus-visible {
   color: #fff;
-  border-color: var(--kimi-teal);
-  background: var(--kimi-teal);
+  border-color: var(--kimi-red);
+  background: var(--kimi-red);
 }
 
 .download-action.is-disabled {
@@ -3972,6 +3951,7 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 
 @media (max-width: 780px) {
   .navbar-custom .navbar-brand {
+    display: none;
     max-width: 64px;
     overflow: hidden;
     font-size: 15px;
