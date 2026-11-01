@@ -3204,6 +3204,9 @@ html[data-theme="dark"] .glass-card .post-tags {
   background: #fff;
   box-shadow: 0 10px 28px rgba(20, 32, 44, .07);
   color: #17212b;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .site-comments h2,
@@ -3239,8 +3242,8 @@ html[data-theme="dark"] .glass-card .post-tags {
   line-height: 1.25;
 }
 
-.comments-count,
-.comments-auth-head p,
+.site-comments .comments-count,
+.site-comments .comments-auth-head p,
 .comments-compose-footer,
 .comments-user-info > span {
   margin-bottom: 0;
@@ -3271,7 +3274,7 @@ html[data-theme="dark"] .glass-card .post-tags {
   margin-bottom: 24px;
 }
 
-.comments-empty {
+.site-comments .comments-empty {
   margin: 0;
   padding: 18px;
   border: 1px dashed #d7dee3;
@@ -3281,7 +3284,7 @@ html[data-theme="dark"] .glass-card .post-tags {
   text-align: center;
 }
 
-.comments-item {
+.site-comments .comments-item {
   margin: 0;
   padding: 16px 18px;
   border: 1px solid #e6ebee;
@@ -3323,7 +3326,7 @@ html[data-theme="dark"] .glass-card .post-tags {
   white-space: nowrap;
 }
 
-.comments-item-body {
+.site-comments .comments-item-body {
   margin: 0;
   color: #36444c;
   font-size: 15px;
@@ -3503,7 +3506,7 @@ html[data-theme="dark"] .glass-card .post-tags {
   background: #f4f7f8;
 }
 
-.comments-message {
+.site-comments .comments-message {
   min-height: 1.5em;
   margin: 12px 0 0;
   color: #687781;
@@ -3561,7 +3564,7 @@ html[data-theme="dark"] .glass-card .post-tags {
     flex-direction: column;
   }
 
-  .comments-item {
+  .site-comments .comments-item {
     padding: 14px;
   }
 
