@@ -1,0 +1,74 @@
+name: iOS Build and Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/clients-ios.yml'
+      - '_clients/ios/**'
+      - 'KimiBlog/**'
+      - 'KimiBlogTests/**'
+      - 'KimiBlog.xcodeproj/**'
+      - 'ci/**'
+  pull_request:
+    paths:
+      - '.github/workflows/clients-ios.yml'
+      - '_clients/ios/**'
+      - 'KimiBlog/**'
+      - 'KimiBlogTests/**'
+      - 'KimiBlog.xcodeproj/**'
+      - 'ci/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    name: ${{ matrix.family }} simulator
+    runs-on: macos-15
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [iPhone, iPad]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Locate project
+        shell: bash
+        run: |
+          if [[ -d _clients/ios/KimiBlog.xcodeproj ]]; then
+            echo 'IOS_PROJECT_DIR=_clients/ios' >> "$GITHUB_ENV"
+          elif [[ -d KimiBlog.xcodeproj ]]; then
+            echo 'IOS_PROJECT_DIR=.' >> "$GITHUB_ENV"
+          else
+            echo 'KimiBlog.xcodeproj was not found.' >&2
+            exit 1
+          fi
+      - name: Check simulator selection
+        run: python3 -m unittest discover -s "$IOS_PROJECT_DIR/ci" -p 'test_*.py'
+      - name: Build, test and capture native app
+        env:
+          SIMULATOR_FAMILY: ${{ matrix.family }}
+        run: bash "$IOS_PROJECT_DIR/ci/build-and-test.sh" "$SIMULATOR_FAMILY"
+      - name: Build unsigned iPhone and iPad release
+        if: matrix.family == 'iPhone'
+        run: bash "$IOS_PROJECT_DIR/ci/build-release.sh"
+      - name: Upload logs, XCTest results and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ matrix.family }}-${{ github.run_number }}
+          path: |
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.log
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.json
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.png
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.zip
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.xcresult
+          if-no-files-found: warn
+          retention-days: 14
