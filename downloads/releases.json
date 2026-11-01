@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "revision": "r3",
   "releaseDate": "2026-11-02",
-  "iosValidatedCommit": null,
+  "iosValidatedCommit": "d913e62ba5ec6fe2198651688f5c795c214d0ba5",
   "artifacts": [
     {
       "platform": "Android",
