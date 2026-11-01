@@ -1,5 +1,5 @@
-63ee5c59f24db6a3e6ba951dc0690b9f35ea12f2f234a3b45fbefcc0274246b3  KIMI-Blog-Android-2.0.0-r2.apk
+a261fca602f68d65273d7ef6b1bf1924bcbabfab54bafd570d260e00c6e7b442  KIMI-Blog-Android-2.0.0-r3.apk
 be11c7fc719667d24e993b80433b3e444b191cc00c8a6d73ecec084a734e7922  KIMI-Blog-Windows-2.0.0-r2.exe
-a0788734a880a16f65f23d6f8b45d23da0020661833b1aeb98d5a44b18fa2c35  KIMI-Blog-iOS-Source-2.0.0-r2.zip
-ae2600f6400e6d49496912c5fdce7f79cd1ef9aab946ae4b16083ca45a7e5937  KIMI-Blog-HarmonyOS-NEXT-Source-2.0.0-r2.zip
-59327af6c7bd39233a5fa235c2a41e963f7e8e21acd76be173ffe5c795bfc6e4  KIMI-Blog-OpenHarmony-API12-2.0.0-r2-unsigned.hap
+9d402f4c0a733c79489b606a8ceb77e7ae9c1a579adffae33678aae753aa8208  KIMI-Blog-iOS-Source-2.0.0-r3.zip
+5987564d8bdc31ebea11144e34a5be0fc1a359bb4610284d3aae369f9ab46d00  KIMI-Blog-HarmonyOS-NEXT-Source-2.0.0-r3.zip
+5fce0ac4920476c5b11cbc6e33530cbea1a179a5dbd10f759edd51d502992582  KIMI-Blog-OpenHarmony-API12-2.0.0-r3-unsigned.hap

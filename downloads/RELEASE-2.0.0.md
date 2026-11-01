@@ -1,6 +1,13 @@
-# KIMI Blog 2.0.0 · 界面修订版 r2
+# KIMI Blog 2.0.0 · 界面修订版 r3
 
-发布日期：2026-11-01。本文适用于前台阅读客户端。
+发布日期：2026-11-02。本文适用于前台阅读客户端。
+
+## r3 导航细节修订
+
+- 手机网页、Android、iOS 和鸿蒙导航的选中背景改为与电脑网页相同的完整胶囊圆角；浅色填充为 #F4F7F8。
+- 移除手机软件文章工具栏中收藏旁边的返回按钮，保留收藏、分享、字号和评论；Android 系统返回与 iOS 页面顶部返回仍可用。
+- 移动端内部构建号提升为 20002，文件名增加 `-r3`。Windows 本轮无对应工具栏按钮，继续提供已发布的 r2 文件。
+- 网页样式和离线缓存版本已更新，避免继续显示旧的圆角矩形。
 
 ## r2 界面修订
 
@@ -26,9 +33,9 @@
 
 ## 产物与安装边界
 
-- Android：2.0.0（versionCode 20001），`com.kimi.blog`，沿用原发布证书，Android 8.0+。
+- Android：2.0.0（versionCode 20002），`com.kimi.blog`，沿用原发布证书，Android 8.0+。
 - Windows：2.0.0.1，原生 WPF EXE，Windows 10/11 + .NET Framework 4.8；没有商业代码签名。
-- iOS：2.0.0（build 20001）SwiftUI Xcode 源码；iPhone/iPad 共用。没有 Apple 分发证书，因此下载项是源码，不是可直接安装的 IPA。
+- iOS：2.0.0（build 20002）SwiftUI Xcode 源码；iPhone/iPad 共用。没有 Apple 分发证书，因此下载项是源码，不是可直接安装的 IPA。
 - HarmonyOS NEXT：2.0.0 ArkTS Stage 工程，`com.kimi.blog.harmony`。使用 DevEco Studio 与对应的 HarmonyOS SDK，并配置自己的设备签名后构建。未完成华为生产签名或 NEXT 真机安装验证。
 - OpenHarmony API 12：从同一 ArkTS 源码真实编译的未签名 Stage 开发包，设备类型 `default`。它用于开发验证，不应当当作已验证的 HarmonyOS NEXT 正式安装包。
 
