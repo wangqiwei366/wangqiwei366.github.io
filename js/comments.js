@@ -1,12 +1,14 @@
 (function () {
   "use strict";
 
-  var SESSION_KEY = "kimi-comment-session-v1";
+  var SESSION_KEY = "kimi-comment-session-v2";
 
   function readSession() {
     try {
+      window.localStorage.removeItem("kimi-comment-session-v1");
       var value = JSON.parse(window.localStorage.getItem(SESSION_KEY) || "null");
-      if (value && typeof value.token === "string" && value.token && value.user) return value;
+      if (value && typeof value.token === "string" && value.token && value.user && /^[1-9][0-9]{5}$/.test(String(value.user.id || ""))) return value;
+      window.localStorage.removeItem(SESSION_KEY);
     } catch (error) {
       // Ignore malformed local state and start signed out.
     }
@@ -244,7 +246,7 @@
           selectAuthTab("login");
           var loginId = root.querySelector('[data-auth-form="login"] input[name="id"]');
           if (loginId) { loginId.value = id; loginId.focus(); }
-          setMessage("注册成功，你的用户 ID 是 " + id + "，请使用它登录。", "success");
+          setMessage("注册成功，你的 6 位数字 ID 是 " + id + "，请记好它并使用它登录。", "success");
         })
         .catch(function (error) { setMessage(error.message, "error"); })
         .finally(function () { setBusy(form, false); });

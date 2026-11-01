@@ -29,7 +29,7 @@
             <div class="comments-auth-head">
                 <div>
                     <h3>登录后参与评论</h3>
-                    <p>注册时会自动生成独一无二的用户 ID。</p>
+                    <p>注册时会自动生成唯一的 6 位数字 ID，请记好它。</p>
                 </div>
                 <div class="comments-tabs" role="tablist" aria-label="账户操作">
                     <button class="comments-tab is-active" type="button" data-auth-tab="login" role="tab" aria-selected="true">登录</button>
@@ -39,7 +39,7 @@
 
             <form class="comments-form" data-auth-form="login">
                 <div class="comments-fields comments-fields-login">
-                    <label>用户 ID<input name="id" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="例如 UABC123"></label>
+                    <label>用户 ID<input name="id" type="text" required inputmode="numeric" pattern="[1-9][0-9]{5}" minlength="6" maxlength="6" autocomplete="username" spellcheck="false" placeholder="6 位数字 ID" title="请输入 6 位数字用户 ID"></label>
                     <label>密码<input name="password" type="password" required autocomplete="current-password" placeholder="至少 8 个字符"></label>
                 </div>
                 <button class="comments-button" type="submit">登录</button>
@@ -66,4 +66,4 @@
         </form>
     </div>
 </section>
-<script src="{{ '/js/comments.js?v=3' | prepend: site.baseurl }}" defer></script>
+<script src="{{ '/js/comments.js?v=4' | prepend: site.baseurl }}" defer></script>

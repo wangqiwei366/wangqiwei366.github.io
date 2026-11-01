@@ -13,7 +13,7 @@
 
 ## 公开接口
 
-- `POST /auth/register`：`{ "nickname": "昵称", "password": "至少 8 位密码" }`。返回自动生成的唯一用户 ID。
+- `POST /auth/register`：`{ "nickname": "昵称", "password": "至少 8 位密码" }`。返回随机生成的唯一 6 位数字用户 ID（100000–999999）。数据库主键防止重复，发生冲突时自动重新生成。
 - `POST /auth/login`：`{ "id": "用户 ID", "password": "密码" }`。返回短期 Bearer token 和用户信息。
 - `GET /auth/me`：带 `Authorization: Bearer <token>` 查询当前登录用户。
 - `POST /auth/logout`：带 Bearer token 删除当前会话。

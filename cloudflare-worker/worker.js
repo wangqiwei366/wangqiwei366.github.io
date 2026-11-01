@@ -14,6 +14,9 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MAX_NICKNAME_LENGTH = 40;
 const MAX_COMMENT_LENGTH = 2000;
 const MAX_ARTICLE_LENGTH = 300;
+const USER_ID_MIN = 100000;
+const USER_ID_COUNT = 900000;
+const USER_ID_ATTEMPTS = 12;
 
 export default {
   async fetch(request, env) {
@@ -155,9 +158,14 @@ function validatePassword(value) {
 }
 
 function generateUserId() {
-  const bytes = new Uint8Array(9);
-  crypto.getRandomValues(bytes);
-  return `U${bytesToBase64Url(bytes).toUpperCase()}`;
+  // Rejection sampling keeps all six-digit IDs equally likely. The users
+  // primary key below is the final uniqueness check, including concurrent signups.
+  const random = new Uint32Array(1);
+  const limit = Math.floor(0x100000000 / USER_ID_COUNT) * USER_ID_COUNT;
+  do {
+    crypto.getRandomValues(random);
+  } while (random[0] >= limit);
+  return String(USER_ID_MIN + random[0] % USER_ID_COUNT);
 }
 
 async function registerUser(env, payload) {
@@ -168,23 +176,24 @@ async function registerUser(env, payload) {
   crypto.getRandomValues(passwordSalt);
   const passwordHash = await derivePasswordHash(password, passwordSalt);
   const createdAt = new Date().toISOString();
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < USER_ID_ATTEMPTS; attempt += 1) {
     const id = generateUserId();
     try {
       await db.prepare("INSERT INTO users (id, nickname, password_hash, password_salt, iterations, created_at) VALUES (?, ?, ?, ?, ?, ?)")
         .bind(id, nickname, passwordHash, bytesToBase64Url(passwordSalt), PASSWORD_ITERATIONS, createdAt).run();
       return publicUser({ id, nickname, createdAt });
     } catch (error) {
-      if (!/unique|constraint/i.test(String(error?.message || "")) || attempt === 2) throw error;
+      if (!/unique constraint failed:\s*users\.id/i.test(String(error?.message || ""))) throw error;
     }
   }
-  throw new Error("注册失败，请稍后重试");
+  throw httpError(503, "暂时无法分配用户 ID，请稍后重试");
 }
 
 async function loginUser(env, payload) {
   const id = String(payload.id || payload.userId || "").trim();
   const password = String(payload.password || "");
   if (!id || !password) throw httpError(400, "请输入用户 ID 和密码");
+  if (!/^[1-9][0-9]{5}$/.test(id)) throw httpError(400, "请输入 6 位数字用户 ID");
   const db = requireDatabase(env);
   const user = await db.prepare("SELECT id, nickname, password_hash AS passwordHash, password_salt AS passwordSalt, iterations, created_at AS createdAt FROM users WHERE id = ?").bind(id).first();
   if (!user || !(await verifyPassword(password, user))) throw httpError(401, "用户 ID 或密码不正确");
