@@ -1,6 +1,8 @@
+> 2.0.0 更新（2026-11-01）：请优先查看 ../RELEASE-2.0.0.md 的最新功能、构建和签名说明。下面保留原有工程说明。
+
 # KIMI Blog iOS 阅读应用
 
-这是一个只包含前台阅读功能的原生 SwiftUI 工程。文章列表、搜索、标签和年份归档、文章阅读、原生 HTML 转换、收藏与离线缓存、字号、深浅主题和刷新都在 `KimiBlog` target 中实现。工程没有管理台、登录入口或管理接口，也没有使用 `WKWebView`。
+这是一个原生 SwiftUI 阅读与评论工程。2.0.0 包含文章列表、搜索、归档、阅读、收藏、离线缓存、字号、主题、底部导航，以及与网站通用的评论注册、登录和发布。账号只用于评论，工程不包含管理台，也没有使用 `WKWebView`。
 
 ## 在 Mac 上打开和运行
 
@@ -14,11 +16,11 @@
 
 在 Xcode 的 app target `Signing & Capabilities` 中选择你自己的 Apple Developer Team，并使用自己的 bundle identifier（默认是 `com.kimi.blog`）。工程没有填写 `DEVELOPMENT_TEAM`，不会占用或暴露任何团队信息。连接真机后选择该设备运行；TestFlight 或 App Store 分发使用 Xcode 的 Archive/Distribute 流程。
 
-本 Windows 工作区无法运行 Xcode、iOS Simulator 或 Apple 签名工具，因此这里不生成也不声称存在 IPA。最终编译、真机测试和签名必须在安装了 Xcode 的 Mac 上完成。
+源码已通过 GitHub Actions 的 macOS Xcode 构建、iPhone/iPad 模拟器 XCTest，以及未签名设备 Release 构建。没有 Apple 分发证书，因此此下载包是源码，不是可直接安装的 IPA；真机签名和分发仍需自己的 Apple 开发者配置。
 
 ## 已完成的检查
 
-Windows 上运行 `./Validate-Project.ps1` 可检查源码引用、XML、图片目录和离线文章。另已用 Xcode 项目文件解析器检查项目语法、对象引用、两套 target 和 Debug 测试配置。修复了 iOS 16 按钮兼容写法、Combine 导入、深色模式配色和首页开始阅读跳转。这些检查不等同于 Swift 编译或真机测试。
+Windows 上运行 `./Validate-Project.ps1` 可检查源码引用、XML、图片目录和离线文章。2026-11-01 的 2.0.0 源码已在 macOS CI 通过 iPhone/iPad 测试，覆盖离线种子、正文提取、关于页语言选择、收藏迁移与中文文章评论 ID；真实设备安装和签名未验证。
 
 Mac 上可以运行：
 
@@ -30,4 +32,4 @@ xcodebuild -project KimiBlog.xcodeproj -scheme KimiBlog -destination 'platform=i
 
 测试命令里的设备名称应对应本机已安装的模拟器。
 
-仓库提供了 GitHub Actions 工作流 `.github/workflows/ios.yml`。推送到 GitHub 后，它会在 macOS runner 上自动选择可用的 iPhone 和 iPad 模拟器，运行 Swift 单元测试，启动原生应用并上传浅色/深色截图及构建日志；还会执行不签名的设备 Release 构建。工作流不需要 Apple Developer 密钥，也不会发布到商店。
+网站仓库的工作流为 `.github/workflows/clients-ios.yml`，独立工程附带 `.github/workflows/ios.yml`。它们在 macOS runner 上选择可用的 iPhone 和 iPad 模拟器，运行 Swift 单元测试，启动原生应用并上传浅色/深色截图及构建日志，并执行不签名的设备 Release 构建。工作流不需要 Apple Developer 密钥，也不会发布到商店。

@@ -4035,3 +4035,38 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
     padding: 22px 20px 21px !important;
   }
 }
+
+/* 2.0: mobile navigation is always reachable above the safe area. */
+@media (max-width: 780px) {
+  body { padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
+  .navbar-custom, .navbar-custom.is-fixed, .navbar-custom.is-visible,
+  .navbar-custom.nav-scroll-hidden, .navbar-custom.is-hidden {
+    position: fixed !important; top: auto !important; bottom: 0 !important;
+    left: 0; right: 0; width: 100%; margin: 0 !important;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    transform: none !important; opacity: 1 !important; visibility: visible !important;
+    transition: none !important;
+    background: #fff !important; border-top: 1px solid #e5e9ed;
+    border-radius: 0 !important; box-shadow: 0 -4px 24px rgba(23,33,43,.05);
+  }
+  .navbar-custom .nav-shell { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 !important; min-height: 52px; border: 0; box-shadow: none; background: transparent; }
+  .navbar-custom .navbar-header { display: none !important; }
+  .navbar-custom .navbar-links, .navbar-custom .navbar-links.is-open {
+    position: static !important; display: flex !important; width: 100%;
+    gap: 4px; padding: 0 !important; margin: 0; opacity: 1; visibility: visible;
+    transform: none; max-height: none; overflow: visible; border: 0; box-shadow: none;
+  }
+  .navbar-custom .navbar-links > a, .navbar-custom .navbar-links > button,
+  .navbar-custom .navbar-links > .nav-download-link {
+    flex: 1 1 0 !important; min-width: 0 !important; max-width: none !important;
+    width: auto !important; height: 48px; min-height: 48px; padding: 0 3px !important;
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+    color: #17212b !important; font-size: 12px !important; border-radius: 14px;
+    white-space: nowrap; background: transparent; text-decoration: none;
+  }
+  .navbar-custom .nav-download-link svg { display: none; }
+  .navbar-custom .navbar-links > a[aria-current="page"],
+  .navbar-custom .navbar-links > a:hover, .navbar-custom .search-icon:hover { background: #f4f7f8; }
+  .download-page { padding-top: 48px; }
+  .comments-section { scroll-margin-bottom: 90px; }
+}

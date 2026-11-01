@@ -1,0 +1,62 @@
+{
+  "version": "2.0.0",
+  "releaseDate": "2026-11-01",
+  "iosValidatedCommit": "4fb4c095",
+  "artifacts": [
+    {
+      "platform": "Android",
+      "format": "apk",
+      "distribution": "signed-installable",
+      "file": "KIMI-Blog-Android-2.0.0.apk",
+      "url": "/downloads/KIMI-Blog-Android-2.0.0.apk",
+      "version": "2.0.0",
+      "sizeBytes": 1020898,
+      "sha256": "e1826f29d2e7ab3d8c02cd962a9d64d49526c4b29f14bac2eb0cced3a5278a7b",
+      "requirements": "Android 8.0+"
+    },
+    {
+      "platform": "Windows",
+      "format": "exe",
+      "distribution": "portable",
+      "file": "KIMI-Blog-Windows-2.0.0.exe",
+      "url": "/downloads/KIMI-Blog-Windows-2.0.0.exe",
+      "version": "2.0.0",
+      "sizeBytes": 1116160,
+      "sha256": "0ad73f17183d0bd157f5f406a7b5e5fd7bf0345d6fccde6c24d5919121848f99",
+      "requirements": "Windows 10/11, .NET Framework 4.8"
+    },
+    {
+      "platform": "iOS",
+      "format": "zip",
+      "distribution": "source",
+      "file": "KIMI-Blog-iOS-Source-2.0.0.zip",
+      "url": "/downloads/KIMI-Blog-iOS-Source-2.0.0.zip",
+      "version": "2.0.0",
+      "sizeBytes": 2180022,
+      "sha256": "9b73e72f1da86345ef598893397d12faa1da0b8284a9d7f06e9a88d45f95cef0",
+      "requirements": "Mac/Xcode; Apple signing required for device distribution"
+    },
+    {
+      "platform": "HarmonyOS NEXT",
+      "format": "zip",
+      "distribution": "source",
+      "file": "KIMI-Blog-HarmonyOS-NEXT-Source-2.0.0.zip",
+      "url": "/downloads/KIMI-Blog-HarmonyOS-NEXT-Source-2.0.0.zip",
+      "version": "2.0.0",
+      "sizeBytes": 340841,
+      "sha256": "7b88282db83947693af75deb73f22b699b222b462acba0d16889df496fce46a7",
+      "requirements": "DevEco Studio, matching SDK and device signing; NEXT device not tested"
+    },
+    {
+      "platform": "OpenHarmony API 12",
+      "format": "hap",
+      "distribution": "unsigned-development",
+      "file": "KIMI-Blog-OpenHarmony-API12-2.0.0-unsigned.hap",
+      "url": "/downloads/KIMI-Blog-OpenHarmony-API12-2.0.0-unsigned.hap",
+      "version": "2.0.0",
+      "sizeBytes": 521615,
+      "sha256": "1f3c7b43a811d41ef14dced57da47cdb4ba406f14bf36af9ddd90b2c2298c380",
+      "requirements": "OpenHarmony API 12; device signing and validation required"
+    }
+  ]
+}

@@ -73,6 +73,7 @@
     };
     var session = readSession();
     var comments = [];
+    var loadingComments = false;
 
     function setStatus(message, kind) {
       elements.status.textContent = message || "";
@@ -162,11 +163,13 @@
     }
 
     function loadComments() {
+      if (loadingComments || elements.commentForm.classList.contains("is-busy")) return Promise.resolve();
       if (!apiBase) {
         setStatus("评论服务未配置", "error");
         elements.list.replaceChildren(createElement("p", "comments-empty", "评论服务暂时不可用。"));
         return Promise.resolve();
       }
+      loadingComments = true;
       return api("/comments?article=" + encodeURIComponent(articleId))
         .then(function (data) {
           comments = Array.isArray(data.comments) ? data.comments : [];
@@ -175,10 +178,12 @@
         })
         .catch(function (error) {
           var message = serviceErrorMessage(error);
-          elements.list.replaceChildren(createElement("p", "comments-empty", message));
-          elements.count.textContent = "评论暂不可用";
+          if (!comments.length) {
+            elements.list.replaceChildren(createElement("p", "comments-empty", message));
+            elements.count.textContent = "评论暂不可用";
+          }
           setStatus(message, "error");
-        });
+        }).finally(function () { loadingComments = false; });
     }
 
     function refreshSession() {
@@ -195,7 +200,8 @@
           saveSession(session);
         }
         renderAccount();
-      }).catch(function () {
+      }).catch(function (error) {
+        if (error.status !== 401) return;
         session = null;
         saveSession(null);
         renderAccount();
@@ -291,6 +297,11 @@
 
     renderAccount();
     Promise.all([loadComments(), refreshSession()]);
+    // Refresh remote comments without rebuilding the composer or losing drafts.
+    window.setInterval(function () { if (!document.hidden) loadComments(); }, 30000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) Promise.all([loadComments(), refreshSession()]);
+    });
   }
 
   function start() {
