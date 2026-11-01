@@ -8,7 +8,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Password",
 };
 
-const PASSWORD_ITERATIONS = 120000;
+// Cloudflare's production runtime caps a single PBKDF2 call at 100,000.
+const PASSWORD_ITERATIONS = 100000;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MAX_NICKNAME_LENGTH = 40;
 const MAX_COMMENT_LENGTH = 2000;

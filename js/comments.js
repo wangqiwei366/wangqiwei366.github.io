@@ -256,7 +256,10 @@
       saveSession(null);
       renderAccount();
       setStatus("已退出登录", "success");
-      if (oldSession) api("/auth/logout", { method: "POST" }).catch(function () {});
+      if (oldSession) api("/auth/logout", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + oldSession.token },
+      }).catch(function () {});
     });
 
     elements.commentForm.addEventListener("submit", function (event) {

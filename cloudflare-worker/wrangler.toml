@@ -1,0 +1,8 @@
+name = "wangqiwei366-site-admin"
+main = "worker.js"
+compatibility_date = "2026-06-18"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wangqiwei366-comments"
+database_id = "4469edd6-b8e3-40fb-9b89-89edd0c46277"
