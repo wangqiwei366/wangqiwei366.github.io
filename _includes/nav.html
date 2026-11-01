@@ -14,6 +14,12 @@
             <a href="{{ site.baseurl }}/#main-content"{% if page.url == '/' %} aria-current="page"{% endif %}>文章</a>
             <a href="{{ '/archive/' | prepend: site.baseurl }}"{% if page.url == '/archive/' %} aria-current="page"{% endif %}>归档</a>
             <a href="{{ '/about/' | prepend: site.baseurl }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>关于</a>
+            <a class="nav-download-link" href="{{ '/download/' | prepend: site.baseurl }}" title="下载软件" aria-label="下载软件"{% if page.url == '/download/' %} aria-current="page"{% endif %}>
+                <span>下载软件</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M12 4v11M7.5 11.5 12 16l4.5-4.5M5 20h14" />
+                </svg>
+            </a>
             <button class="search-icon" type="button" title="搜索文章" aria-label="搜索文章">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <circle cx="11" cy="11" r="6.5" />

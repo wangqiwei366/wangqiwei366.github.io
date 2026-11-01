@@ -3581,3 +3581,474 @@ html[data-theme="dark"] .glass-card .post-tags {
     margin-left: 0;
   }
 }
+
+/* Download page ------------------------------------------------------------ */
+.nav-download-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 13px !important;
+  border: 1px solid #17212b;
+  border-radius: 999px;
+  color: #fff !important;
+  background: #17212b;
+  transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease !important;
+}
+
+.nav-download-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.nav-download-link:hover,
+.nav-download-link:focus-visible,
+.nav-download-link[aria-current="page"] {
+  border-color: var(--kimi-red) !important;
+  color: #fff !important;
+  background: var(--kimi-red) !important;
+  transform: translateY(-1px);
+}
+
+.download-page {
+  padding-top: 148px;
+  background: #fff;
+}
+
+.download-hero {
+  padding-bottom: 72px;
+}
+
+.download-eyebrow {
+  margin: 0 0 15px;
+  color: var(--kimi-red);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  line-height: 1.4;
+}
+
+.download-hero h1,
+.download-section-heading h2,
+.download-help h2 {
+  margin: 0;
+  color: var(--kimi-ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.download-hero h1 {
+  max-width: 680px;
+  font-size: clamp(46px, 7vw, 82px);
+  line-height: 1.03;
+}
+
+.download-hero__intro {
+  max-width: 580px;
+  margin: 25px 0 26px;
+  color: var(--kimi-muted);
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 20px;
+  line-height: 1.75;
+}
+
+.download-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  color: var(--kimi-muted);
+  font-size: 13px;
+}
+
+.download-hero__meta span:first-child {
+  color: var(--kimi-teal);
+  font-weight: 700;
+}
+
+.download-options {
+  padding-bottom: 104px;
+}
+
+.download-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 2px solid var(--kimi-ink);
+}
+
+.download-section-heading .download-eyebrow {
+  margin-bottom: 10px;
+}
+
+.download-section-heading h2 {
+  font-size: clamp(31px, 4vw, 45px);
+  line-height: 1.2;
+}
+
+.download-section-heading > p {
+  max-width: 290px;
+  margin: 0;
+  color: var(--kimi-muted);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding-top: 24px;
+}
+
+.download-option {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  padding: 27px 28px 25px !important;
+  border-radius: 18px !important;
+}
+
+.download-option--featured,
+html[data-theme="light"] .download-option--featured {
+  grid-row: span 2;
+  min-height: 578px;
+  color: #fff;
+  border-color: #17212b !important;
+  background: #17212b !important;
+}
+
+.download-option--featured h3,
+.download-option--featured p,
+.download-option--featured .download-option__details,
+.download-option--featured .download-option__hint,
+html[data-theme="light"] .download-option--featured h3,
+html[data-theme="light"] .download-option--featured p,
+html[data-theme="light"] .download-option--featured .download-option__details,
+html[data-theme="light"] .download-option--featured .download-option__hint {
+  color: rgba(255, 255, 255, .8);
+}
+
+.download-option--featured h3,
+html[data-theme="light"] .download-option--featured h3 {
+  color: #fff;
+}
+
+.download-option__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.download-option__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7dee3;
+  border-radius: 12px;
+  color: var(--kimi-teal);
+  background: #f4f7f8;
+}
+
+.download-option--featured .download-option__icon,
+html[data-theme="light"] .download-option--featured .download-option__icon {
+  border-color: rgba(255, 255, 255, .24);
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+.download-option__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.download-badge {
+  padding: 5px 9px;
+  border: 1px solid #d7dee3;
+  border-radius: 999px;
+  color: #687781;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.download-badge--ready,
+.download-badge--source {
+  border-color: rgba(255, 255, 255, .28);
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+.download-badge--available {
+  border-color: rgba(53, 109, 105, .28);
+  color: var(--kimi-teal);
+  background: rgba(53, 109, 105, .08);
+}
+
+.download-badge--source {
+  border-color: rgba(53, 109, 105, .28);
+  color: var(--kimi-teal);
+  background: rgba(53, 109, 105, .08);
+}
+
+.download-option h3 {
+  margin: 25px 0 10px;
+  color: var(--kimi-ink);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 27px;
+  line-height: 1.25;
+}
+
+.download-option p {
+  margin: 0;
+  color: var(--kimi-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.download-option__details {
+  display: grid;
+  gap: 9px;
+  margin: 22px 0 0;
+  padding: 0 0 0 18px;
+  color: var(--kimi-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.download-option__details li::marker {
+  color: var(--kimi-red);
+}
+
+.download-option__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-top: auto;
+  padding-top: 27px;
+}
+
+.download-action {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 15px;
+  border: 1px solid #17212b;
+  border-radius: 4px;
+  color: #17212b;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.download-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.download-action:hover,
+.download-action:focus-visible {
+  color: #fff;
+  border-color: var(--kimi-red);
+  background: var(--kimi-red);
+  transform: translateY(-2px);
+}
+
+.download-action--primary {
+  color: #17212b;
+  border-color: #fff;
+  background: #fff;
+}
+
+.download-action--primary:hover,
+.download-action--primary:focus-visible {
+  color: #fff;
+  border-color: var(--kimi-red);
+  background: var(--kimi-red);
+}
+
+.download-action--secondary {
+  min-height: 36px;
+  padding-inline: 12px;
+  border-color: #d7dee3;
+  color: var(--kimi-teal);
+  background: #f4f7f8;
+  font-size: 12px;
+}
+
+.download-action--secondary:hover,
+.download-action--secondary:focus-visible {
+  color: #fff;
+  border-color: var(--kimi-teal);
+  background: var(--kimi-teal);
+}
+
+.download-action.is-disabled {
+  cursor: default;
+  color: #9aa5aa;
+  border-color: #e1e6e9;
+  background: #f4f7f8;
+}
+
+.download-action.is-disabled:hover,
+.download-action.is-disabled:focus-visible {
+  color: #9aa5aa;
+  border-color: #e1e6e9;
+  background: #f4f7f8;
+  transform: none;
+}
+
+.download-option__hint {
+  color: #8b969c;
+  font-size: 12px;
+}
+
+.download-help {
+  padding: 78px 0 92px;
+  color: #fff;
+  background: #17212b;
+}
+
+.download-help__inner {
+  display: grid;
+  grid-template-columns: minmax(250px, .9fr) 1.5fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.download-help .download-eyebrow {
+  color: #e77a6e;
+}
+
+.download-help h2 {
+  max-width: 400px;
+  color: #fff;
+  font-size: clamp(30px, 4vw, 43px);
+  line-height: 1.25;
+}
+
+.download-steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #454a4b;
+}
+
+.download-steps li {
+  display: grid;
+  grid-template-columns: 55px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  min-height: 82px;
+  border-bottom: 1px solid #454a4b;
+}
+
+.download-steps li > span {
+  color: #e77a6e;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.download-steps p {
+  margin: 0;
+  color: #d6dddf;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+@media (max-width: 780px) {
+  .navbar-custom .navbar-brand {
+    max-width: 64px;
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navbar-custom .navbar-links > a {
+    min-width: 30px;
+    max-width: 38px;
+    flex-basis: 30px;
+    padding-inline: 4px;
+    font-size: 11px;
+  }
+
+  .nav-download-link {
+    min-width: 0 !important;
+    max-width: 38px !important;
+    padding: 0 6px !important;
+    gap: 0;
+    font-size: 0 !important;
+  }
+
+  .nav-download-link svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .navbar-custom .search-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 36px;
+    flex-basis: 36px;
+  }
+
+  .download-page {
+    padding-top: 118px;
+  }
+
+  .download-hero {
+    padding-bottom: 54px;
+  }
+
+  .download-hero__intro {
+    margin-top: 20px;
+    font-size: 18px;
+  }
+
+  .download-section-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .download-section-heading > p {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .download-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .download-option--featured {
+    grid-row: auto;
+    min-height: 0;
+  }
+
+  .download-help__inner {
+    grid-template-columns: 1fr;
+    gap: 42px;
+  }
+}
+
+@media (max-width: 380px) {
+  .nav-download-link {
+    max-width: 36px !important;
+  }
+
+  .download-option {
+    padding: 22px 20px 21px !important;
+  }
+}
