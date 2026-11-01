@@ -35,4 +35,11 @@ xcrun simctl io "$simulator_id" screenshot "$artifacts/home-light.png"
 xcrun simctl ui "$simulator_id" appearance dark
 sleep 2
 xcrun simctl io "$simulator_id" screenshot "$artifacts/home-dark.png"
+xcrun simctl ui "$simulator_id" appearance light
+for screen in archive article about; do
+  xcrun simctl terminate "$simulator_id" com.kimi.blog || true
+  xcrun simctl launch "$simulator_id" com.kimi.blog "--qa-$screen"
+  sleep 3
+  xcrun simctl io "$simulator_id" screenshot "$artifacts/$screen-light.png"
+done
 ditto -c -k --sequesterRsrc --keepParent "$app" "$artifacts/KimiBlog-$family-Simulator.zip"

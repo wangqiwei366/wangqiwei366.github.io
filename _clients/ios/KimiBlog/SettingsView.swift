@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var store: BlogStore
     @AppStorage("appearance") private var appearance = "system"
-    @AppStorage("readerFontSize") private var fontSize = 19.0
+    @AppStorage("readerFontSize") private var fontSize = 17.0
 
     var body: some View {
         NavigationStack {
@@ -49,37 +49,23 @@ struct SettingsView: View {
 
 struct AboutView: View {
     @EnvironmentObject private var store: BlogStore
-    @AppStorage("readerFontSize") private var fontSize = 19.0
-
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @AppStorage("readerFontSize") private var fontSize = 17.0
+    @State private var showSettings = false
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    HStack(spacing: 18) {
-                        Image("avatar")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .accessibilityLabel("KIMI Blog 头像")
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(Site.title).font(.system(.title, design: .serif)).fontWeight(.bold)
-                            Text("王琦玮 · 个人博客").foregroundStyle(.secondary)
-                        }
-                    }.padding(.vertical, 15)
-                    Text("在文字里，发现更大的世界。")
-                        .font(.system(.title2, design: .serif)).foregroundStyle(Palette.teal)
-                    Divider()
-                    if store.aboutHtml.isEmpty {
-                        Text("这里是王琦玮的个人博客，记录文字、观察与生活。")
-                    } else {
-                        NativeDocumentView(html: store.aboutHtml, fontSize: fontSize)
-                    }
-                    Link(destination: Site.url) { Label("访问网站", systemImage: "arrow.up.right.square") }
-                        .font(.subheadline).padding(.vertical, 20)
-                }
-                .padding(24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity)
-            }.background(Palette.paper).navigationTitle("关于").navigationBarTitleDisplayMode(.inline)
-        }
+        GeometryReader { geometry in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    WebsiteHeader(image: "about-bg", title: "关于", subtitle: "这里是 @王琦玮 的个人博客，与你一起发现更大的世界。")
+                    VStack(alignment: .leading, spacing: 28) {
+                        NativeDocumentView(html: store.aboutHtml.isEmpty ? "<p>这里是王琦玮的个人博客，记录文字、观察与生活。</p>" : store.aboutHtml, fontSize: fontSize)
+                        Button { showSettings = true } label: { Label("阅读设置 · 刷新与外观", systemImage: "slider.horizontal.3") }.font(.system(size: 14))
+                        Link("访问网站  ↗", destination: Site.url).font(.system(size: 14))
+                        Text("KIMI Blog 2.0.0 · 界面修订版").font(.system(size: 12)).foregroundStyle(Palette.muted)
+                    }.padding(sizeClass == .regular ? 66 : 28).modifier(WebsiteCard())
+                        .frame(maxWidth: 760).padding(.horizontal, geometry.size.width < 768 ? geometry.size.width * 0.05 + 20 : 40).padding(.vertical, 72)
+                }.frame(width: geometry.size.width)
+            }.background(Palette.paper)
+        }.sheet(isPresented: $showSettings) { SettingsView() }
     }
 }
