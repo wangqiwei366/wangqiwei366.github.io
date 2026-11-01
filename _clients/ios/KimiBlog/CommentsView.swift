@@ -24,7 +24,7 @@ struct CommentFailure: LocalizedError {
 enum CommentsAPI {
     static let base = "https://wangqiwei366-site-admin.wangqiwei366.workers.dev"
     static func articleID(_ value: String) -> String {
-        let path = Site.safeURL(value)?.path ?? "/"
+        let path = Site.safeURL(value).flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: true)?.percentEncodedPath } ?? "/"
         return path.replacingOccurrences(of: "index.html", with: "").hasSuffix("/") ? path.replacingOccurrences(of: "index.html", with: "") : path + "/"
     }
     static func request(_ path: String, body: [String: String]? = nil, token: String? = nil, article: String? = nil) async throws -> CommentEnvelope {
@@ -76,7 +76,7 @@ final class CommentAccount: ObservableObject {
     }
     func validate() async {
         guard let token = session?.token else { return }
-        do { _ = try await CommentsAPI.request("/auth/me", token: token) }
+        do { let result = try await CommentsAPI.request("/auth/me", token: token); if result.user == nil { clear() } }
         catch let error as CommentFailure { if error.status == 401 { clear() } }
         catch { } // A temporary network failure must not log the user out.
     }

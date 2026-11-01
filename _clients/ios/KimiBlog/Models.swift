@@ -2,14 +2,14 @@ import Foundation
 
 enum Site {
     static let title = "KIMI Blog"
-    static let url = URL(string: "https://kimi-wang.space")!
+    static let url = URL(string: "https://wangqiwei366.github.io")!
 
     static func safeURL(_ value: String, relativeTo base: URL = url) -> URL? {
         guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let result = URL(string: value, relativeTo: base)?.absoluteURL,
               ["https", "http"].contains(result.scheme?.lowercased() ?? ""),
               result.host != nil else { return nil }
-        if result.host == "wangqiwei366.github.io", var parts = URLComponents(url: result, resolvingAgainstBaseURL: true) {
+        if result.host == "kimi-wang.space", var parts = URLComponents(url: result, resolvingAgainstBaseURL: true) {
             parts.scheme = "https"; parts.host = url.host; return parts.url
         }
         return result
@@ -77,17 +77,17 @@ struct SearchEntry: Decodable {
         tags = try container.decodeIfPresent(String.self, forKey: .tags)
         url = try container.decode(String.self, forKey: .url)
         let nested = try container.decodeIfPresent(NestedVideo.self, forKey: .video)
-        videoUrl = (try container.decodeIfPresent(String.self, forKey: .videoUrl))
-            ?? (try container.decodeIfPresent(String.self, forKey: .videoURLAlias))
-            ?? nested?.url
-        videoPoster = (try container.decodeIfPresent(String.self, forKey: .videoPoster))
-            ?? (try container.decodeIfPresent(String.self, forKey: .videoPosterAlias))
-            ?? (try container.decodeIfPresent(String.self, forKey: .poster))
-            ?? nested?.poster
-        videoDuration = (try container.decodeIfPresent(String.self, forKey: .videoDuration))
-            ?? (try container.decodeIfPresent(String.self, forKey: .videoDurationAlias))
-            ?? (try container.decodeIfPresent(String.self, forKey: .duration))
-            ?? nested?.duration
+        let primaryURL = try container.decodeIfPresent(String.self, forKey: .videoUrl)
+        let aliasURL = try container.decodeIfPresent(String.self, forKey: .videoURLAlias)
+        videoUrl = primaryURL ?? aliasURL ?? nested?.url
+        let primaryPoster = try container.decodeIfPresent(String.self, forKey: .videoPoster)
+        let aliasPoster = try container.decodeIfPresent(String.self, forKey: .videoPosterAlias)
+        let poster = try container.decodeIfPresent(String.self, forKey: .poster)
+        videoPoster = primaryPoster ?? aliasPoster ?? poster ?? nested?.poster
+        let primaryDuration = try container.decodeIfPresent(String.self, forKey: .videoDuration)
+        let aliasDuration = try container.decodeIfPresent(String.self, forKey: .videoDurationAlias)
+        let duration = try container.decodeIfPresent(String.self, forKey: .duration)
+        videoDuration = primaryDuration ?? aliasDuration ?? duration ?? nested?.duration
     }
 
     var article: Article? {

@@ -10,11 +10,16 @@ struct HomeView: View {
     private var featured: Article? { store.articles.first }
     private var remaining: [Article] { Array(store.articles.dropFirst()) }
     private var topicCounts: [(String, Int)] {
-        Dictionary(grouping: store.articles.flatMap(\.tags), by: { $0 })
-            .map { ($0.key, $0.value.count) }
-            .sorted { lhs, rhs in lhs.1 == rhs.1 ? lhs.0 < rhs.0 : lhs.1 > rhs.1 }
-            .prefix(8)
-            .map { ($0.0, $0.1) }
+        var counts: [String: Int] = [:]
+        for article in store.articles {
+            for tag in article.tags { counts[tag, default: 0] += 1 }
+        }
+        let rows: [(String, Int)] = counts.map { ($0.key, $0.value) }
+        let sorted = rows.sorted { lhs, rhs in
+            if lhs.1 == rhs.1 { return lhs.0 < rhs.0 }
+            return lhs.1 > rhs.1
+        }
+        return Array(sorted.prefix(8))
     }
 
     var body: some View {

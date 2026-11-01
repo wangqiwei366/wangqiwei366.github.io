@@ -65,7 +65,11 @@ enum NativeHTML {
                 if closing { depth -= 1 } else if !token.hasSuffix("/>") { depth += 1 }
                 if depth == 0 {
                     let start = match.range.location + match.range.length
-                    return string(NSRange(location: start, length: next.range.location - start), in: html)
+                    let content = string(NSRange(location: start, length: next.range.location - start), in: html)
+                    if let boundary = content.range(of: #"(?is)<ul\b[^>]*class=["'][^"']*\bpager\b|<section\b[^>]*data-comments-root"#, options: .regularExpression) {
+                        return String(content[..<boundary.lowerBound])
+                    }
+                    return content
                 }
             }
         }
@@ -77,7 +81,6 @@ enum NativeHTML {
         for (index, match) in tags.enumerated() {
             let tag = string(match.range, in: html)
             guard !tag.hasPrefix("</"),
-                  attributes(tag)["class"]?.split(whereSeparator: \.isWhitespace).contains("zh") == true,
                   attributes(tag)["class"]?.split(whereSeparator: \.isWhitespace).contains("post-container") == true else { continue }
             let opening = tag.dropFirst().prefix { $0.isLetter || $0.isNumber }.lowercased()
             var depth = 1
@@ -89,7 +92,11 @@ enum NativeHTML {
                 if closing { depth -= 1 } else if !token.hasSuffix("/>") { depth += 1 }
                 if depth == 0 {
                     let start = match.range.location + match.range.length
-                    return string(NSRange(location: start, length: next.range.location - start), in: html)
+                    let content = string(NSRange(location: start, length: next.range.location - start), in: html)
+                    if let boundary = content.range(of: #"(?is)<ul\b[^>]*class=["'][^"']*\bpager\b|<section\b[^>]*data-comments-root"#, options: .regularExpression) {
+                        return String(content[..<boundary.lowerBound])
+                    }
+                    return content
                 }
             }
         }

@@ -21,7 +21,7 @@ final class BlogStoreTests: XCTestCase {
         let mirror = article("文章", url: "https://kimi-wang.space/a/", date: "2026-02-01", body: "<p>RSS</p>")
         let merged = BlogStore.mergedArticles(existing: [], index: [indexed], feed: [mirror])
         XCTAssertEqual(merged.count, 1)
-        XCTAssertEqual(merged[0].contentHtml, "")
+        XCTAssertEqual(merged[0].contentHtml, "<p>RSS</p>")
     }
 
     func testFeedBodyFillsMissingIndexedBodyWhenIdentityMatches() {
@@ -38,6 +38,12 @@ final class BlogStoreTests: XCTestCase {
         XCTAssertEqual(merged[0].videoUrl, cached.videoUrl)
         XCTAssertEqual(merged[0].videoPoster, cached.videoPoster)
         XCTAssertEqual(merged[0].videoDuration, cached.videoDuration)
+    }
+
+    func testCommentsUseEncodedWebPathAndMigrateBookmarks() {
+        XCTAssertEqual(CommentsAPI.articleID("https://kimi-wang.space/2026/中文/"), "/2026/%E4%B8%AD%E6%96%87/")
+        XCTAssertEqual(Site.key("https://kimi-wang.space/2026/中文/"), Site.key("https://wangqiwei366.github.io/2026/%E4%B8%AD%E6%96%87/"))
+        XCTAssertEqual(NativeHTML.postContainer(in: "<div class=\"post-container glass-card\"><p>Body</p><section data-comments-root>Web form</section></div>"), "<p>Body</p>")
     }
 }
 
