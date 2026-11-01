@@ -4061,7 +4061,7 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
     flex: 1 1 0 !important; min-width: 0 !important; max-width: none !important;
     width: auto !important; height: 48px; min-height: 48px; padding: 0 3px !important;
     display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-    color: #17212b !important; font-size: 12px !important; border-radius: 14px;
+    color: #17212b !important; font-size: 12px !important; border-radius: 999px;
     white-space: nowrap; background: transparent; text-decoration: none;
   }
   .navbar-custom .nav-download-link svg { display: none; }

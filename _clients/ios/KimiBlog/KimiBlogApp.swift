@@ -130,7 +130,7 @@ struct RootView: View {
                     Text(item.element).font(.system(size: 12, weight: .semibold))
                         .frame(maxWidth: .infinity).frame(height: 48)
                         .background(selected == item.offset ? Palette.cool : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .clipShape(Capsule())
                 }.accessibilityLabel("底部导航：\(item.element)")
             }
             Button {

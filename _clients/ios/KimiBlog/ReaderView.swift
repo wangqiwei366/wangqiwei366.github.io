@@ -24,7 +24,6 @@ struct ArticleReader: View {
                                         extraVideoURL: article.videoUrl.flatMap { Site.safeURL($0, relativeTo: Site.safeURL(article.url) ?? Site.url) })
                                 }
                                 HStack(spacing: 24) {
-                                    Button { dismiss() } label: { Label("返回", systemImage: "arrow.left") }
                                     Spacer(minLength: 0)
                                     Menu {
                                         Button("放大字号") { fontSize = min(30, fontSize + 1) }
