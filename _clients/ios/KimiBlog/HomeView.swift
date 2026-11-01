@@ -282,9 +282,9 @@ private struct HomeHero: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 16, weight: .semibold))
                                 .frame(width: 39, height: 39)
-                                .overlay(Circle().stroke(Color.white.opacity(0.62), lineWidth: 1))
+                                .overlay(Circle().stroke(Palette.line.opacity(0.35), lineWidth: 1))
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.ink)
                         .accessibilityLabel("搜索文章")
                     }
                     .padding(12).background(Palette.paper).clipShape(RoundedRectangle(cornerRadius: 16))

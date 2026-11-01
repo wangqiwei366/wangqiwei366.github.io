@@ -81,6 +81,7 @@ enum NativeHTML {
         for (index, match) in tags.enumerated() {
             let tag = string(match.range, in: html)
             guard !tag.hasPrefix("</"),
+                  attributes(tag)["class"]?.split(whereSeparator: \.isWhitespace).contains("en") != true,
                   attributes(tag)["class"]?.split(whereSeparator: \.isWhitespace).contains("post-container") == true else { continue }
             let opening = tag.dropFirst().prefix { $0.isLetter || $0.isNumber }.lowercased()
             var depth = 1
