@@ -97,6 +97,14 @@ struct RootView: View {
             .navigationDestination(for: String.self) { ArticleReader(articleID: $0) }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .overlay {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--qa-comments"), let article = store.articles.first {
+                ScrollView { CommentsView(articleURL: article.url).padding(20).padding(.top, 70) }
+                    .background(Palette.paper)
+            }
+            #endif
+        }
         .ignoresSafeArea(.container, edges: .top)
         .safeAreaInset(edge: .bottom, spacing: 0) { dock }
         .background(Palette.paper)

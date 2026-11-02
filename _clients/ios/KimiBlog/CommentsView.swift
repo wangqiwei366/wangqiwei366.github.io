@@ -82,6 +82,19 @@ final class CommentAccount: ObservableObject {
     }
 }
 
+private struct CommentPillStyle: ButtonStyle {
+    var fillsWidth = false
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.font(.system(size: 15))
+            .padding(.horizontal, 14)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 44)
+            .foregroundStyle(Palette.ink).background(Palette.cool)
+            .clipShape(Capsule())
+            .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.7 : 1)
+    }
+}
+
 struct CommentsView: View {
     @EnvironmentObject private var account: CommentAccount
     @Environment(\.scenePhase) private var scenePhase
@@ -98,16 +111,16 @@ struct CommentsView: View {
             Text("评论").font(.title2.bold())
             Text("与网站和其他客户端同步 · 账号通用").font(.caption).foregroundStyle(.secondary)
             if let user = account.session?.user {
-                HStack {
+                HStack(spacing: 8) {
                     Text("\(user.nickname) · ID \(user.id)").font(.subheadline)
                     Spacer()
-                    Button("退出") { Task { await account.logout() } }
+                    Button("退出") { Task { await account.logout() } }.buttonStyle(CommentPillStyle())
                 }
             } else {
-                HStack {
+                HStack(spacing: 8) {
                     Button("登录") { register = false; showingAuth = true }
                     Button("注册账号") { register = true; showingAuth = true }
-                }.buttonStyle(.bordered)
+                }.buttonStyle(CommentPillStyle(fillsWidth: true))
             }
             Text("写下你的想法（最多 2000 字）").font(.subheadline)
             TextEditor(text: $draft).frame(minHeight: 100).padding(8)
@@ -115,10 +128,10 @@ struct CommentsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel("评论内容")
                 .onChange(of: draft) { value in if value.count > 2000 { draft = String(value.prefix(2000)) } }
-            HStack {
+            HStack(spacing: 8) {
                 Button(sending ? "正在发布…" : "发布评论") { Task { await submit() } }.disabled(sending)
                 Button(loading ? "正在同步…" : "刷新评论") { Task { await reload() } }.disabled(loading)
-            }.buttonStyle(.bordered)
+            }.buttonStyle(CommentPillStyle(fillsWidth: true))
             Text(status).font(.caption).foregroundStyle(.secondary).accessibilityLabel(status)
             if comments.isEmpty { Text("还没有评论，欢迎留下第一条。").font(.subheadline).foregroundStyle(.secondary) }
             ForEach(comments.reversed()) { comment in
@@ -183,7 +196,7 @@ private struct CommentLoginView: View {
                     .autocorrectionDisabled().onChange(of: name) { value in name = String(value.prefix(register ? 40 : 6)) }
                 SecureField("密码（8–128 位）", text: $password).textContentType(register ? .newPassword : .password)
                 if !status.isEmpty { Text(status).textSelection(.enabled) }
-                Button(busy ? "请稍候…" : register ? "注册" : "登录") { Task { await authenticate() } }.disabled(busy)
+                Button(busy ? "请稍候…" : register ? "注册" : "登录") { Task { await authenticate() } }.disabled(busy).buttonStyle(CommentPillStyle(fillsWidth: true))
             }
             .navigationTitle(register ? "注册评论账号" : "登录")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
