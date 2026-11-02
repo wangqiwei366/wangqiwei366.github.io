@@ -1,7 +1,7 @@
 {
   "version": "2.1.2",
   "releaseDate": "2026-11-03",
-  "iosValidatedCommit": null,
+  "iosValidatedCommit": "5b0ff11e587c72545326081081a610a1ec2af377",
   "artifacts": [
     {
       "platform": "Android",
@@ -11,8 +11,8 @@
       "url": "/downloads/KIMI-Blog-Android-2.1.2.apk",
       "version": "2.1.2",
       "build": 21002,
-      "sizeBytes": 17071339,
-      "sha256": "a581158633de351937f30ef233601969fa1bc755d2a0a3787d95362cc6677127",
+      "sizeBytes": 17071567,
+      "sha256": "ade5bb7b38122678667e391468f071f423805ee6e4831a95b49945c0ed3133d0",
       "requirements": "Android 8.0+"
     },
     {
@@ -24,7 +24,7 @@
       "version": "2.1.2",
       "build": "2.1.2.0",
       "sizeBytes": 1239040,
-      "sha256": "026856da4f03013dc541acfedbef255ca5b5034feef9cbeccbdec462f750e6a0",
+      "sha256": "f04b09c605609e75c0181debd41bf1b974ca6560f489fd56ac1c1037c85d5243",
       "requirements": "Windows 10/11; .NET Framework 4.8"
     },
     {
