@@ -4036,7 +4036,7 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
   }
 }
 
-/* 2.0: mobile navigation is always reachable above the safe area. */
+/* 2.1.2: direction-aware mobile navigation, with inset capsule items. */
 @media (max-width: 780px) {
   body { padding-bottom: calc(83px + env(safe-area-inset-bottom, 0px)) !important; }
   .navbar-custom, .navbar-custom.is-fixed, .navbar-custom.is-visible,
@@ -4045,7 +4045,7 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
     left: 0; right: 0; width: 100%; margin: 0 !important;
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     transform: none !important; opacity: 1 !important; visibility: visible !important;
-    transition: none !important; pointer-events: auto !important;
+    transition: transform .28s cubic-bezier(.22,.8,.28,1) !important; pointer-events: auto !important;
     background: #fff !important; border-top: 1px solid #e5e9ed;
     border-radius: 0 !important; box-shadow: 0 -4px 24px rgba(23,33,43,.05);
   }
@@ -4069,4 +4069,15 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
   .navbar-custom .navbar-links > a:hover, .navbar-custom .search-icon:hover { background: #f4f7f8; }
   .download-page { padding-top: 48px; }
   .comments-section { scroll-margin-bottom: 90px; }
+}
+
+@media (max-width: 780px) {
+  .navbar-custom.nav-scroll-hidden {
+    transform: translate3d(0, 110%, 0) !important;
+    pointer-events: none !important;
+  }
+  .navbar-custom:has(:focus-visible) { transform: none !important; pointer-events: auto !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar-custom, .navbar-custom.nav-scroll-hidden { transition: none !important; }
 }

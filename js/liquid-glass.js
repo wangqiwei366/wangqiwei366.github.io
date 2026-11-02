@@ -24,7 +24,7 @@
 
             // Always restore the dock at the top of a page, including after
             // iOS rubber-band scrolling reports a negative scroll position.
-            if (currentY <= 12) {
+            if (currentY <= 12 || nav.querySelector(':focus-visible') || document.querySelector('.search-page.search-active')) {
                 setVisible(true);
             } else if (Math.abs(delta) >= threshold) {
                 // Scrolling the document down hides the dock; reversing
@@ -39,6 +39,7 @@
             frame = window.requestAnimationFrame(readScroll);
         }
 
+        nav.addEventListener('focusin', function () { setVisible(true); });
         setVisible(true);
         window.addEventListener('scroll', scheduleScrollRead, { passive: true });
         window.addEventListener('resize', function () {
