@@ -99,7 +99,7 @@ final class BlogStore: ObservableObject {
         for entry in index {
             var next = entry
             if let old = merged[entry.id] {
-                if !old.contentHtml.isEmpty { next.contentHtml = old.contentHtml }
+                if next.contentHtml.isEmpty && !old.contentHtml.isEmpty { next.contentHtml = old.contentHtml }
                 if next.videoUrl == nil || next.videoUrl?.isEmpty == true { next.videoUrl = old.videoUrl }
                 if next.videoPoster == nil || next.videoPoster?.isEmpty == true { next.videoPoster = old.videoPoster }
                 if next.videoDuration == nil || next.videoDuration?.isEmpty == true { next.videoDuration = old.videoDuration }
@@ -113,7 +113,7 @@ final class BlogStore: ObservableObject {
             // never create a second article row for a mirror URL.
             guard indexedIDs.contains(entry.id) else { continue }
             guard var previous = merged[entry.id] else { continue }
-            if !entry.contentHtml.isEmpty { previous.contentHtml = entry.contentHtml }
+            if !entry.contentHtml.isEmpty && index.first(where: { $0.id == entry.id })?.contentHtml.isEmpty != false { previous.contentHtml = entry.contentHtml }
             if previous.tags.isEmpty { previous.tags = entry.tags }
             Self.fillVideoMetadata(&previous)
             merged[entry.id] = previous

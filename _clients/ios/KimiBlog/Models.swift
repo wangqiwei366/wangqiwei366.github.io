@@ -47,6 +47,7 @@ struct Snapshot: Codable {
 struct SearchEntry: Decodable {
     var title: String
     var subtitle: String?
+    var contentHtml: String?
     var date: String
     var tags: String?
     var url: String
@@ -61,7 +62,7 @@ struct SearchEntry: Decodable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case title, subtitle, date, tags, url
+        case title, subtitle, date, tags, url, contentHtml
         case videoUrl, videoPoster, videoDuration
         case videoURLAlias = "video_url"
         case videoPosterAlias = "video_poster"
@@ -73,6 +74,7 @@ struct SearchEntry: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
         subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
+        contentHtml = try container.decodeIfPresent(String.self, forKey: .contentHtml)
         date = try container.decode(String.self, forKey: .date)
         tags = try container.decodeIfPresent(String.self, forKey: .tags)
         url = try container.decode(String.self, forKey: .url)
@@ -95,7 +97,7 @@ struct SearchEntry: Decodable {
         return Article(title: title, subtitle: subtitle ?? "", url: resolved.absoluteString,
                        date: String(date.prefix(10)),
                        tags: (tags ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty },
-                       contentHtml: "", videoUrl: videoUrl, videoPoster: videoPoster, videoDuration: videoDuration)
+                       contentHtml: contentHtml ?? "", videoUrl: videoUrl, videoPoster: videoPoster, videoDuration: videoDuration)
     }
 }
 
