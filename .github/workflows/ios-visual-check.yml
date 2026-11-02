@@ -1,0 +1,80 @@
+name: iOS Visual Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful iOS build run containing the simulator app
+        required: true
+        type: string
+      artifact:
+        description: Simulator artifact name from that build
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  ipad-comments:
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.run_id }}
+          name: ${{ inputs.artifact }}
+          path: simulator-build
+      - name: Capture the rendered iPad comment controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p visual-app visual-artifacts
+          unzip -q simulator-build/KimiBlog-iPad-Simulator.zip -d visual-app
+          xcrun simctl list devices available --json > visual-artifacts/devices.json
+          simulator_id="$(python3 _clients/ios/ci/select_simulator.py --family iPad visual-artifacts/devices.json)"
+          xcrun simctl bootstatus "$simulator_id" -b
+          xcrun simctl install "$simulator_id" visual-app/KimiBlog.app
+          xcrun simctl ui "$simulator_id" appearance light
+          cat > visual-artifacts/check.swift <<'SWIFT'
+          import AppKit
+          import Foundation
+          let data = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
+          guard let bitmap = NSBitmapImageRep(data: data) else { exit(2) }
+          var foreground = 0
+          for y in stride(from: bitmap.pixelsHigh / 10, to: bitmap.pixelsHigh * 3 / 4, by: 8) {
+              for x in stride(from: bitmap.pixelsWide / 20, to: bitmap.pixelsWide * 19 / 20, by: 8) {
+                  if let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                     color.alphaComponent > 0.8,
+                     max(color.redComponent, color.greenComponent, color.blueComponent) < 0.65 {
+                      foreground += 1
+                  }
+              }
+          }
+          print("Content samples: \(foreground)")
+          exit(foreground > 30 ? 0 : 1)
+          SWIFT
+          swiftc visual-artifacts/check.swift -o visual-artifacts/check-screenshot
+          xcrun simctl launch "$simulator_id" com.kimi.blog --qa-comments
+          rendered=0
+          for attempt in {1..12}; do
+            sleep 5
+            xcrun simctl io "$simulator_id" screenshot visual-artifacts/comments-light.png
+            if visual-artifacts/check-screenshot visual-artifacts/comments-light.png; then
+              rendered=1
+              break
+            fi
+          done
+          test "$rendered" = 1
+      - name: Upload rendered screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-iPad-visual
+          path: visual-artifacts/comments-light.png
+          retention-days: 14
