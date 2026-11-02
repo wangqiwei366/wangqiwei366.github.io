@@ -37,7 +37,7 @@ struct SettingsView: View {
                 }
                 Section("应用") {
                     LabeledContent("名称", value: Site.title)
-                    LabeledContent("版本", value: "2.0.0")
+                    LabeledContent("版本", value: "2.1.0")
                     Text("原生 iPhone 与 iPad 阅读应用").foregroundStyle(.secondary)
                 }
             }
@@ -61,7 +61,7 @@ struct AboutView: View {
                         NativeDocumentView(html: store.aboutHtml.isEmpty ? "<p>这里是王琦玮的个人博客，记录文字、观察与生活。</p>" : store.aboutHtml, fontSize: fontSize)
                         Button { showSettings = true } label: { Label("阅读设置 · 刷新与外观", systemImage: "slider.horizontal.3") }.font(.system(size: 14))
                         Link("访问网站  ↗", destination: Site.url).font(.system(size: 14))
-                        Text("KIMI Blog 2.0.0 · 界面修订版").font(.system(size: 12)).foregroundStyle(Palette.muted)
+                        Text("KIMI Blog 2.1.0 · 界面修订版").font(.system(size: 12)).foregroundStyle(Palette.muted)
                     }.padding(sizeClass == .regular ? 66 : 28).modifier(WebsiteCard())
                         .frame(maxWidth: 760).padding(.horizontal, geometry.size.width < 768 ? geometry.size.width * 0.05 + 20 : 40).padding(.vertical, 72)
                 }.frame(width: geometry.size.width)
