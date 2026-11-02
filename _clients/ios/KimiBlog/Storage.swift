@@ -113,7 +113,7 @@ final class BlogStore: ObservableObject {
             // never create a second article row for a mirror URL.
             guard indexedIDs.contains(entry.id) else { continue }
             guard var previous = merged[entry.id] else { continue }
-            if !entry.contentHtml.isEmpty && previous.contentHtml.isEmpty { previous.contentHtml = entry.contentHtml }
+            if !entry.contentHtml.isEmpty { previous.contentHtml = entry.contentHtml }
             if previous.tags.isEmpty { previous.tags = entry.tags }
             Self.fillVideoMetadata(&previous)
             merged[entry.id] = previous
@@ -136,10 +136,12 @@ final class BlogStore: ObservableObject {
         if article.videoDuration?.isEmpty != false, let duration = attribute("data-duration") ?? attribute("duration") { article.videoDuration = duration }
     }
 
-    func refresh() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
+    private var refreshInFlight = false
+    func refresh(silent: Bool = false) async {
+        guard !refreshInFlight else { return }
+        refreshInFlight = true
+        if !silent { isRefreshing = true }
+        defer { refreshInFlight = false; if !silent { isRefreshing = false } }
         do {
             async let indexRequest = PublicAPI.index()
             async let feedRequest = PublicAPI.feed()
@@ -152,7 +154,7 @@ final class BlogStore: ObservableObject {
                 // The index is authoritative for titles and metadata. Keep it when
                 // RSS is temporarily unavailable so refresh still shows new entries.
                 feed = []
-                message = "目录已更新，但订阅正文暂时不可用；稍后可再次刷新。"
+                if !silent { message = "目录已更新，但订阅正文暂时不可用；稍后可再次刷新。" }
             }
             guard !index.isEmpty else { throw AppError.message("网站目录为空，已保留离线文章。") }
             let next = Self.mergedArticles(existing: articles, index: index, feed: feed)
@@ -162,11 +164,11 @@ final class BlogStore: ObservableObject {
             let nextAbout = (try? await aboutRequest) ?? aboutHtml
             try LocalFiles.write(Snapshot(siteTitle: Site.title, siteUrl: Site.url.absoluteString,
                                           aboutHtml: nextAbout, articles: next), name: "articles.json")
-            articles = next
-            aboutHtml = nextAbout
+            if articles != next { articles = next }
+            if aboutHtml != nextAbout { aboutHtml = nextAbout }
             lastRefresh = Date()
             UserDefaults.standard.set(lastRefresh, forKey: "lastRefresh")
-        } catch { message = "更新未完成，本地文章仍可阅读。\n\(error.localizedDescription)" }
+        } catch { if !silent { message = "更新未完成，本地文章仍可阅读。\n\(error.localizedDescription)" } }
     }
 
     @discardableResult

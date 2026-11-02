@@ -41,7 +41,7 @@ struct ArticleReader: View {
                             .modifier(WebsiteCard(radius: sizeClass == .regular ? 26 : 22))
                             .frame(maxWidth: 760).padding(.horizontal, geometry.size.width < 768 ? geometry.size.width * 0.05 + 20 : 40).padding(.top, 72)
                             CommentsView(articleURL: article.url).padding(24).frame(maxWidth: 760).padding(.horizontal, 20).padding(.vertical, 42)
-                        }.frame(width: geometry.size.width)
+                        }.padding(.bottom, 92).frame(width: geometry.size.width)
                     }.background(Palette.paper)
                 }
                 .toolbar(.hidden, for: .navigationBar).navigationBarBackButtonHidden(true)

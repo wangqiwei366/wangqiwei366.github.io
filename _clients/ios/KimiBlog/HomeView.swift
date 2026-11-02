@@ -52,7 +52,7 @@ struct HomeView: View {
                             Button("了解更多  →", action: onAbout).font(.system(size: 14)).foregroundStyle(Palette.teal)
                         }.frame(maxWidth: 1120, alignment: .leading).padding(.horizontal, viewport.size.width * 0.05).padding(.vertical, 66)
                         Text("KIMI Blog · © 2026 王琦玮").font(.system(size: 12)).foregroundStyle(Palette.muted).padding(35)
-                    }.frame(width: viewport.size.width)
+                    }.padding(.bottom, 92).frame(width: viewport.size.width)
                 }.background(Palette.paper).refreshable { await store.refresh() }
             }
         }

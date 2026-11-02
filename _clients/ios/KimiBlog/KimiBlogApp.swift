@@ -80,6 +80,8 @@ struct KimiBlogApp: App {
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var store: BlogStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var dockSelection
     @State private var selected = 0
     @State private var path: [String] = []
     @State private var archiveTag = ""
@@ -94,6 +96,9 @@ struct RootView: View {
                 default: HomeView(onArchive: { tag in archiveTag = tag; searchOpen = false; selected = 1 }, onAbout: { selected = 3 })
                 }
             }
+            .id(selected)
+            .transition(reduceMotion ? .opacity : .asymmetric(insertion: .offset(x: 28).combined(with: .opacity), removal: .offset(x: -18).combined(with: .opacity)))
+            .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86), value: selected)
             .navigationDestination(for: String.self) { ArticleReader(articleID: $0) }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -106,7 +111,7 @@ struct RootView: View {
             #endif
         }
         .ignoresSafeArea(.container, edges: .top)
-        .safeAreaInset(edge: .bottom, spacing: 0) { dock }
+        .overlay(alignment: .bottom) { dock }
         .background(Palette.paper)
         .onAppear {
             #if DEBUG
@@ -116,14 +121,12 @@ struct RootView: View {
             if arguments.contains("--qa-article"), let article = store.articles.first { path = [article.id] }
             #endif
         }
-        .task {
-            while !Task.isCancelled {
-                if scenePhase == .active { await store.refresh() }
-                do { try await Task.sleep(nanoseconds: 300_000_000_000) } catch { break }
-            }
+        .task { if scenePhase == .active { await store.refresh(silent: true) } }
+        .onReceive(Timer.publish(every: 10, on: .main, in: .common).autoconnect()) { _ in
+            if scenePhase == .active { Task { await store.refresh(silent: true) } }
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .active, Date().timeIntervalSince(store.lastRefresh ?? .distantPast) > 60 { Task { await store.refresh() } }
+            if phase == .active { Task { await store.refresh(silent: true) } }
         }
         .alert("提示", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
             Button("知道了", role: .cancel) { store.message = nil }
@@ -133,21 +136,33 @@ struct RootView: View {
         HStack(spacing: 0) {
             ForEach(Array(["首页", "归档", "收藏", "关于"].enumerated()), id: \.offset) { item in
                 Button {
-                    path.removeAll(); archiveTag = ""; searchOpen = false; selected = item.offset
+                    selectTab(item.offset)
                 } label: {
                     Text(item.element).font(.system(size: 12, weight: .semibold))
                         .frame(maxWidth: .infinity).frame(height: 48)
-                        .background(selected == item.offset ? Palette.cool : Color.clear)
-                        .clipShape(Capsule())
+                        .background {
+                            if selected == item.offset {
+                                Capsule().fill(Palette.cool).matchedGeometryEffect(id: "selected-tab", in: dockSelection)
+                            }
+                        }
                 }.accessibilityLabel("底部导航：\(item.element)")
             }
             Button {
-                path.removeAll(); archiveTag = ""; searchOpen = true; selected = 1
+                selectTab(1); searchOpen = true
             } label: { Image(systemName: "magnifyingglass").font(.system(size: 17)).frame(width: 44, height: 48) }
                 .accessibilityLabel("搜索文章")
         }
         .foregroundStyle(Palette.ink).buttonStyle(.plain).padding(.horizontal, 8).frame(height: 66)
         .modifier(WebsiteCard(radius: 40)).padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 9)
-        .background(Palette.paper)
+        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86), value: selected)
+        .gesture(DragGesture(minimumDistance: 35).onEnded { value in
+            guard abs(value.translation.width) > 60, abs(value.translation.width) > abs(value.translation.height) * 2 else { return }
+            selectTab(min(3, max(0, selected + (value.translation.width < 0 ? 1 : -1))))
+        })
+    }
+    private func selectTab(_ next: Int) {
+        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86)) {
+            path.removeAll(); archiveTag = ""; searchOpen = false; selected = next
+        }
     }
 }

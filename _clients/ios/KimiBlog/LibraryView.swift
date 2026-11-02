@@ -52,7 +52,7 @@ struct LibraryView: View {
                                 }
                             }
                         }.foregroundStyle(Palette.ink).frame(maxWidth: 1120).padding(.horizontal, geometry.size.width * 0.05).padding(.top, 72).padding(.bottom, 70)
-                    }.frame(width: geometry.size.width)
+                    }.padding(.bottom, 92).frame(width: geometry.size.width)
                 }.background(Palette.paper).refreshable { await store.refresh() }
                     .onAppear { if searchInitially { position.scrollTo("search", anchor: .top); searchFocused = true } }
             }

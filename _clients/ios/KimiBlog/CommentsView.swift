@@ -2,7 +2,7 @@ import SwiftUI
 import Security
 
 struct CommentUser: Codable { let id: String; let nickname: String }
-struct BlogComment: Codable, Identifiable {
+struct BlogComment: Codable, Identifiable, Equatable {
     let id: String
     let nickname: String
     let body: String
@@ -103,6 +103,7 @@ struct CommentsView: View {
     @State private var draft = ""
     @State private var status = ""
     @State private var loading = false
+    @State private var refreshInFlight = false
     @State private var sending = false
     @State private var showingAuth = false
     @State private var register = false
@@ -130,7 +131,7 @@ struct CommentsView: View {
                 .onChange(of: draft) { value in if value.count > 2000 { draft = String(value.prefix(2000)) } }
             HStack(spacing: 8) {
                 Button(sending ? "正在发布…" : "发布评论") { Task { await submit() } }.disabled(sending)
-                Button(loading ? "正在同步…" : "刷新评论") { Task { await reload() } }.disabled(loading)
+                Button(loading ? "正在同步…" : "刷新评论") { Task { await reload(silent: false) } }.disabled(loading)
             }.buttonStyle(CommentPillStyle(fillsWidth: true))
             Text(status).font(.caption).foregroundStyle(.secondary).accessibilityLabel(status)
             if comments.isEmpty { Text("还没有评论，欢迎留下第一条。").font(.subheadline).foregroundStyle(.secondary) }
@@ -149,20 +150,23 @@ struct CommentsView: View {
         .sheet(isPresented: $showingAuth) { CommentLoginView(register: register).environmentObject(account) }
         .task(id: articleURL) {
             await account.validate()
-            while !Task.isCancelled {
-                if scenePhase == .active { await reload() }
-                do { try await Task.sleep(nanoseconds: 30_000_000_000) } catch { break }
-            }
+            if scenePhase == .active { await reload() }
+        }
+        .onReceive(Timer.publish(every: 10, on: .main, in: .common).autoconnect()) { _ in
+            if scenePhase == .active { Task { await reload() } }
         }
         .onChange(of: scenePhase) { phase in if phase == .active { Task { await reload(); await account.validate() } } }
     }
-    @MainActor private func reload() async {
-        guard !loading else { return }; loading = true; defer { loading = false }
+    @MainActor private func reload(silent: Bool = true) async {
+        guard !refreshInFlight else { return }; refreshInFlight = true
+        if !silent { loading = true }
+        defer { refreshInFlight = false; if !silent { loading = false } }
         do {
             let result = try await CommentsAPI.request("/comments", article: CommentsAPI.articleID(articleURL))
             guard !Task.isCancelled else { return }
-            comments = result.comments ?? []; status = "\(comments.count) 条评论 · 已同步"
-        } catch { if !Task.isCancelled { status = "同步失败，保留已有评论：" + error.localizedDescription } }
+            let next = result.comments ?? []; if comments != next { comments = next }
+            if !silent { status = "\(comments.count) 条评论" }
+        } catch { if !silent && !Task.isCancelled { status = "同步失败，保留已有评论：" + error.localizedDescription } }
     }
     @MainActor private func submit() async {
         guard !sending else { return }
