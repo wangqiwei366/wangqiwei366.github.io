@@ -8,6 +8,7 @@ struct ArticleReader: View {
     @AppStorage("readerFontSize") private var fontSize = 17.0
     @State private var saving = false
     let articleID: String
+    var closeAction: (() -> Void)? = nil
     var body: some View {
         Group {
             if let article = store.article(articleID) {
@@ -46,7 +47,7 @@ struct ArticleReader: View {
                 }
                 .toolbar(.hidden, for: .navigationBar).navigationBarBackButtonHidden(true)
                 .overlay(alignment: .topLeading) {
-                    Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).frame(width: 42, height: 42).background(Palette.paper.opacity(0.95)).clipShape(Circle()) }
+                    Button { if let closeAction { closeAction() } else { dismiss() } } label: { Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).frame(width: 42, height: 42).background(Palette.paper.opacity(0.95)).clipShape(Circle()) }
                         .accessibilityLabel("返回").padding(.leading, 20).padding(.top, 60)
                 }
                 .task(id: articleID) { await store.loadContent(articleID) }

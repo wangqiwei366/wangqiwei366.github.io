@@ -84,6 +84,9 @@ struct RootView: View {
     @Namespace private var dockSelection
     @State private var selected = 0
     @State private var path: [String] = []
+    @State private var expandedArticleID: String?
+    @State private var articleSourceFrame = CGRect.zero
+    @State private var articleSourceFeatured = false
     @State private var archiveTag = ""
     @State private var searchOpen = false
     var body: some View {
@@ -98,7 +101,7 @@ struct RootView: View {
             }
             .id(selected)
             .transition(reduceMotion ? .opacity : .asymmetric(insertion: .offset(x: 28).combined(with: .opacity), removal: .offset(x: -18).combined(with: .opacity)))
-            .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86), value: selected)
+            .animation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9), value: selected)
             .navigationDestination(for: String.self) { ArticleReader(articleID: $0) }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -110,7 +113,22 @@ struct RootView: View {
             }
             #endif
         }
+        .environment(\.openArticleCard, { id, frame, featured in
+            guard expandedArticleID == nil else { return }
+            articleSourceFrame = frame; articleSourceFeatured = featured; expandedArticleID = id
+        })
         .ignoresSafeArea(.container, edges: .top)
+        .overlay {
+            GeometryReader { viewport in
+                if let id = expandedArticleID, let article = store.article(id) {
+                    ArticleCardExpansion(article: article, source: articleSourceFrame,
+                        featured: articleSourceFeatured, viewport: viewport.size) {
+                            if expandedArticleID == id { expandedArticleID = nil }
+                        }.id(id)
+                }
+            }
+        }
+        .coordinateSpace(name: "article-stage")
         .overlay(alignment: .bottom) { dock }
         .background(Palette.paper)
         .onAppear {
@@ -154,15 +172,97 @@ struct RootView: View {
         }
         .foregroundStyle(Palette.ink).buttonStyle(.plain).padding(.horizontal, 8).frame(height: 66)
         .modifier(WebsiteCard(radius: 40)).padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 9)
-        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86), value: selected)
+        .animation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9), value: selected)
         .gesture(DragGesture(minimumDistance: 35).onEnded { value in
             guard abs(value.translation.width) > 60, abs(value.translation.width) > abs(value.translation.height) * 2 else { return }
             selectTab(min(3, max(0, selected + (value.translation.width < 0 ? 1 : -1))))
         })
     }
     private func selectTab(_ next: Int) {
-        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86)) {
-            path.removeAll(); archiveTag = ""; searchOpen = false; selected = next
+        withAnimation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9)) {
+            expandedArticleID = nil; path.removeAll(); archiveTag = ""; searchOpen = false; selected = next
         }
+    }
+}
+
+// The same source rectangle drives the lifted card and the reader's reveal mask.
+private struct ArticleCardExpansion: View {
+    @EnvironmentObject private var store: BlogStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let article: Article
+    let source: CGRect
+    let featured: Bool
+    let viewport: CGSize
+    let onClose: () -> Void
+    @State private var expanded = false
+    @State private var revealed = false
+    @State private var closing = false
+    private var origin: CGRect {
+        source.width > 1 && source.height > 1 ? source : CGRect(x: 20, y: viewport.height * 0.4, width: max(1, viewport.width - 40), height: 180)
+    }
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ZStack {
+                Palette.paper
+                ArticleReader(articleID: article.id, closeAction: close)
+                    .opacity(revealed ? 1 : 0)
+            }
+            .frame(width: viewport.width, height: viewport.height)
+            .mask(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: expanded ? 0 : 22, style: .continuous)
+                    .frame(width: expanded ? viewport.width : origin.width, height: expanded ? viewport.height : origin.height)
+                    .offset(x: expanded ? 0 : origin.minX, y: expanded ? 0 : origin.minY)
+            }
+            if !reduceMotion {
+                WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
+                    .frame(width: origin.width)
+                    .scaleEffect(expanded ? 1.035 : 1, anchor: .topLeading)
+                    .offset(x: expanded ? 0 : origin.minX, y: expanded ? 0 : origin.minY)
+                    .opacity(revealed ? 0 : 1)
+                    .allowsHitTesting(false).accessibilityHidden(true)
+            }
+        }
+        .frame(width: viewport.width, height: viewport.height, alignment: .topLeading).clipped()
+        .opacity(reduceMotion && closing ? 0 : 1)
+        .allowsHitTesting(revealed && !closing)
+        .simultaneousGesture(DragGesture(minimumDistance: 40).onEnded { value in
+            if value.startLocation.x < 28 && value.translation.width > 85 && abs(value.translation.height) < 70 { close() }
+        })
+        .task {
+            // Commit the source geometry before starting the native interpolation.
+            try? await Task.sleep(nanoseconds: 20_000_000)
+            guard !Task.isCancelled else { return }
+            if reduceMotion {
+                expanded = true
+                withAnimation(.easeOut(duration: 0.18)) { revealed = true }
+            } else {
+                withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.72)) { expanded = true }
+                withAnimation(.easeOut(duration: 0.46).delay(0.12)) { revealed = true }
+            }
+        }
+    }
+    private func close() {
+        guard !closing else { return }
+        if reduceMotion {
+            withAnimation(.easeOut(duration: 0.18)) { closing = true }
+        } else {
+            closing = true
+            withAnimation(.timingCurve(0.3, 0, 0.2, 1, duration: 0.62)) { expanded = false }
+            withAnimation(.easeOut(duration: 0.32)) { revealed = false }
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: reduceMotion ? 180_000_000 : 640_000_000)
+            onClose()
+        }
+    }
+}
+
+private struct ArticleOpenKey: EnvironmentKey {
+    static let defaultValue: ((String, CGRect, Bool) -> Void)? = nil
+}
+extension EnvironmentValues {
+    var openArticleCard: ((String, CGRect, Bool) -> Void)? {
+        get { self[ArticleOpenKey.self] }
+        set { self[ArticleOpenKey.self] = newValue }
     }
 }

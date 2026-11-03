@@ -68,6 +68,7 @@ jobs:
             ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.log
             ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.json
             ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.png
+            ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.mp4
             ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.zip
             ${{ env.IOS_PROJECT_DIR }}/ci-artifacts/*.xcresult
           if-no-files-found: warn

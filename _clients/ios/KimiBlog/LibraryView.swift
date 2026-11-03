@@ -47,7 +47,7 @@ struct LibraryView: View {
                                 if !articles.isEmpty {
                                     Text(year).font(Palette.serif(30)).padding(.top, 24)
                                     ForEach(articles) { article in
-                                        NavigationLink(value: article.id) { WebsiteArticleRow(article: article, favorite: store.isFavorite(article)) }.buttonStyle(.plain)
+                                        ArticleCardButton(article: article)
                                     }
                                 }
                             }

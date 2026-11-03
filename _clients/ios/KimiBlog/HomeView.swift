@@ -23,9 +23,7 @@ struct HomeView: View {
                             Text("独立写作 · 社会观察 · 2026").font(.system(size: 13)).foregroundStyle(Palette.muted)
                             Rectangle().fill(Palette.line).frame(height: 1).padding(.bottom, 12)
                             ForEach(Array(store.articles.enumerated()), id: \.element.id) { entry in
-                                NavigationLink(value: entry.element.id) {
-                                    WebsiteArticleRow(article: entry.element, featured: entry.offset == 0, favorite: store.isFavorite(entry.element))
-                                }.buttonStyle(.plain)
+                                ArticleCardButton(article: entry.element, featured: entry.offset == 0)
                             }
                             Button("查看全部归档  →") { onArchive("") }.font(.system(size: 14)).padding(.top, 20)
                         }
@@ -54,6 +52,13 @@ struct HomeView: View {
                         Text("KIMI Blog · © 2026 王琦玮").font(.system(size: 12)).foregroundStyle(Palette.muted).padding(35)
                     }.padding(.bottom, 92).frame(width: viewport.size.width)
                 }.background(Palette.paper).refreshable { await store.refresh() }
+                    .onAppear {
+                        #if DEBUG
+                        if ProcessInfo.processInfo.arguments.contains("--qa-motion") {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { position.scrollTo("latest", anchor: .top) }
+                        }
+                        #endif
+                    }
             }
         }
     }
@@ -113,4 +118,38 @@ private func articleExcerpt(_ article: Article) -> String {
     let source = article.contentHtml.isEmpty ? article.subtitle : NativeHTML.blocks(article.contentHtml).map { String($0.text.characters) }.joined(separator: " ")
     let clean = source.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines)
     return clean.count > 180 ? String(clean.prefix(180)) + "…" : clean
+}
+
+private struct ArticleFrameKey: PreferenceKey {
+    static let defaultValue = CGRect.zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) { value = nextValue() }
+}
+
+struct ArticleCardButton: View {
+    @EnvironmentObject private var store: BlogStore
+    @Environment(\.openArticleCard) private var openArticle
+    @State private var frame = CGRect.zero
+    @State private var qaOpened = false
+    let article: Article
+    var featured = false
+    var body: some View {
+        Button { openArticle?(article.id, frame, featured) } label: {
+            WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
+        }.buttonStyle(.plain)
+            .accessibilityLabel("阅读文章：\(article.title)")
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ArticleFrameKey.self, value: proxy.frame(in: .named("article-stage")))
+                }
+            }
+            .onPreferenceChange(ArticleFrameKey.self) { next in
+                frame = next
+                #if DEBUG
+                if featured && !qaOpened && next.minY > 0 && next.minY < 600 && ProcessInfo.processInfo.arguments.contains("--qa-motion") {
+                    qaOpened = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { openArticle?(article.id, frame, featured) }
+                }
+                #endif
+            }
+    }
 }

@@ -43,3 +43,13 @@ for screen in archive article about comments; do
   xcrun simctl io "$simulator_id" screenshot "$artifacts/$screen-light.png"
 done
 ditto -c -k --sequesterRsrc --keepParent "$app" "$artifacts/KimiBlog-$family-Simulator.zip"
+
+# Exercise the real card callback and capture intermediate native animation frames.
+xcrun simctl terminate "$simulator_id" com.kimi.blog || true
+xcrun simctl io "$simulator_id" recordVideo --codec=h264 --force "$artifacts/card-expansion.mp4" > "$artifacts/card-recording.log" 2>&1 &
+recording_pid=$!
+xcrun simctl launch "$simulator_id" com.kimi.blog --qa-motion
+sleep 20
+kill -INT "$recording_pid" || true
+wait "$recording_pid" || true
+xcrun simctl io "$simulator_id" screenshot "$artifacts/card-expanded.png"
