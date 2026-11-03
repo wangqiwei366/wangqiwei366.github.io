@@ -128,6 +128,7 @@ private struct ArticleFrameKey: PreferenceKey {
 struct ArticleCardButton: View {
     @EnvironmentObject private var store: BlogStore
     @Environment(\.openArticleCard) private var openArticle
+    @Environment(\.activeArticleCard) private var activeArticle
     @State private var frame = CGRect.zero
     @State private var qaOpened = false
     let article: Article
@@ -136,6 +137,7 @@ struct ArticleCardButton: View {
         Button { openArticle?(article.id, frame, featured) } label: {
             WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
         }.buttonStyle(.plain)
+            .opacity(activeArticle == article.id ? 0 : 1)
             .accessibilityLabel("阅读文章：\(article.title)")
             .background {
                 GeometryReader { proxy in

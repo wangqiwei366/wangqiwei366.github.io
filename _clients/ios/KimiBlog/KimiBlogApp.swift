@@ -113,6 +113,8 @@ struct RootView: View {
             }
             #endif
         }
+        .accessibilityHidden(expandedArticleID != nil)
+        .environment(\.activeArticleCard, expandedArticleID)
         .environment(\.openArticleCard, { id, frame, featured in
             guard expandedArticleID == nil else { return }
             articleSourceFrame = frame; articleSourceFeatured = featured; expandedArticleID = id
@@ -197,6 +199,7 @@ private struct ArticleCardExpansion: View {
     @State private var expanded = false
     @State private var revealed = false
     @State private var closing = false
+    @State private var ghostVisible = true
     private var origin: CGRect {
         source.width > 1 && source.height > 1 ? source : CGRect(x: 20, y: viewport.height * 0.4, width: max(1, viewport.width - 40), height: 180)
     }
@@ -218,7 +221,7 @@ private struct ArticleCardExpansion: View {
                     .frame(width: origin.width)
                     .scaleEffect(expanded ? 1.035 : 1, anchor: .topLeading)
                     .offset(x: expanded ? 0 : origin.minX, y: expanded ? 0 : origin.minY)
-                    .opacity(revealed ? 0 : 1)
+                    .opacity(ghostVisible ? 1 : 0)
                     .allowsHitTesting(false).accessibilityHidden(true)
             }
         }
@@ -237,7 +240,8 @@ private struct ArticleCardExpansion: View {
                 withAnimation(.easeOut(duration: 0.18)) { revealed = true }
             } else {
                 withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.72)) { expanded = true }
-                withAnimation(.easeOut(duration: 0.46).delay(0.12)) { revealed = true }
+                withAnimation(.easeOut(duration: 0.24)) { ghostVisible = false }
+                withAnimation(.easeOut(duration: 0.46).delay(0.14)) { revealed = true }
             }
         }
     }
@@ -248,7 +252,8 @@ private struct ArticleCardExpansion: View {
         } else {
             closing = true
             withAnimation(.timingCurve(0.3, 0, 0.2, 1, duration: 0.62)) { expanded = false }
-            withAnimation(.easeOut(duration: 0.32)) { revealed = false }
+            withAnimation(.easeOut(duration: 0.28)) { revealed = false }
+            withAnimation(.easeOut(duration: 0.26).delay(0.22)) { ghostVisible = true }
         }
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: reduceMotion ? 180_000_000 : 640_000_000)
@@ -257,10 +262,18 @@ private struct ArticleCardExpansion: View {
     }
 }
 
+private struct ActiveArticleCardKey: EnvironmentKey {
+    static let defaultValue: String? = nil
+}
+
 private struct ArticleOpenKey: EnvironmentKey {
     static let defaultValue: ((String, CGRect, Bool) -> Void)? = nil
 }
 extension EnvironmentValues {
+    var activeArticleCard: String? {
+        get { self[ActiveArticleCardKey.self] }
+        set { self[ActiveArticleCardKey.self] = newValue }
+    }
     var openArticleCard: ((String, CGRect, Bool) -> Void)? {
         get { self[ArticleOpenKey.self] }
         set { self[ArticleOpenKey.self] = newValue }
