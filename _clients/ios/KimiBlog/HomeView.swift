@@ -134,7 +134,7 @@ struct ArticleCardButton: View {
             .accessibilityHidden(true)
             .overlay {
                 GeometryReader { proxy in
-                    cardAction(frame: proxy.frame(in: .named("article-stage")))
+                    cardAction(frame: proxy.frame(in: .global))
                 }
             }
             .opacity(activeArticle == article.id ? 0 : 1)

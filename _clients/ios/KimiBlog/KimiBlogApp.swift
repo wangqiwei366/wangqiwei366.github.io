@@ -118,13 +118,12 @@ struct RootView: View {
             GeometryReader { viewport in
                 if let selection = articlePresentation.selection, let article = store.article(selection.id) {
                     ArticleCardExpansion(article: article, source: selection.frame,
-                        featured: selection.featured, viewport: viewport.size) {
+                        featured: selection.featured, viewport: viewport.frame(in: .global)) {
                             articlePresentation.dismiss(selection.id)
                         }.id(selection.id)
                 }
             }
         }
-        .coordinateSpace(name: "article-stage")
         .overlay(alignment: .bottom) { dock }
         .background(Palette.paper)
         .onAppear {
@@ -211,13 +210,14 @@ private struct ArticleCardExpansion: View {
     let article: Article
     let source: CGRect
     let featured: Bool
-    let viewport: CGSize
+    let viewport: CGRect
     let onClose: () -> Void
     @State private var expanded = false
     @State private var revealed = false
     @State private var closing = false
     @State private var ghostVisible = true
-    private var origin: CGRect { source }
+    // NavigationStack and its overlay can have different safe-area origins.
+    private var origin: CGRect { source.offsetBy(dx: -viewport.minX, dy: -viewport.minY) }
     var body: some View {
         ZStack(alignment: .topLeading) {
             ZStack {
