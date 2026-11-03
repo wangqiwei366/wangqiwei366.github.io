@@ -239,7 +239,7 @@ private struct ArticleCardExpansion: View {
                 expanded = true
                 withAnimation(.easeOut(duration: 0.18)) { revealed = true }
             } else {
-                withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.72)) { expanded = true }
+                withAnimation(.timingCurve(0.3, 0, 0.2, 1, duration: 0.72)) { expanded = true }
                 withAnimation(.easeOut(duration: 0.24)) { ghostVisible = false }
                 withAnimation(.easeOut(duration: 0.46).delay(0.14)) { revealed = true }
             }
