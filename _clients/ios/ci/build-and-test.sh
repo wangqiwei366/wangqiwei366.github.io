@@ -53,3 +53,13 @@ sleep 20
 kill -INT "$recording_pid" || true
 wait "$recording_pid" || true
 xcrun simctl io "$simulator_id" screenshot "$artifacts/card-expanded.png"
+
+container="$(xcrun simctl get_app_container "$simulator_id" com.kimi.blog data)"
+cp "$container/Documents/qa-card-state.json" "$artifacts/card-state.json"
+python3 - "$artifacts/card-state.json" <<'PY'
+import json,sys
+state=json.load(open(sys.argv[1]))
+assert state['phase']=='expanded',state
+assert state['width']>1 and state['height']>1,state
+print('PASS: article card callback reaches the expanded native reader:',state)
+PY

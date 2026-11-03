@@ -4,12 +4,13 @@ struct LibraryView: View {
     @EnvironmentObject private var store: BlogStore
     let favoritesOnly: Bool
     let searchInitially: Bool
+    let onArticle: (String, CGRect, Bool) -> Void
     @State private var query = ""
     @State private var selectedTag: String
     @State private var selectedYear = ""
     @FocusState private var searchFocused: Bool
-    init(favoritesOnly: Bool, initialTag: String = "", searchInitially: Bool = false) {
-        self.favoritesOnly = favoritesOnly; self.searchInitially = searchInitially
+    init(favoritesOnly: Bool, initialTag: String = "", searchInitially: Bool = false, onArticle: @escaping (String, CGRect, Bool) -> Void) {
+        self.favoritesOnly = favoritesOnly; self.searchInitially = searchInitially; self.onArticle = onArticle
         _selectedTag = State(initialValue: initialTag)
     }
     private var filtered: [Article] {
@@ -47,7 +48,7 @@ struct LibraryView: View {
                                 if !articles.isEmpty {
                                     Text(year).font(Palette.serif(30)).padding(.top, 24)
                                     ForEach(articles) { article in
-                                        ArticleCardButton(article: article)
+                                        ArticleCardButton(article: article, onOpen: onArticle)
                                     }
                                 }
                             }

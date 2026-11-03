@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     var onArchive: (String) -> Void
     var onAbout: () -> Void
+    var onArticle: (String, CGRect, Bool) -> Void
     private var topics: [(String, Int)] {
         let counts = store.articles.flatMap(\.tags).reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
         return Array(counts.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }.prefix(8)).map { ($0.key, $0.value) }
@@ -23,7 +24,7 @@ struct HomeView: View {
                             Text("独立写作 · 社会观察 · 2026").font(.system(size: 13)).foregroundStyle(Palette.muted)
                             Rectangle().fill(Palette.line).frame(height: 1).padding(.bottom, 12)
                             ForEach(Array(store.articles.enumerated()), id: \.element.id) { entry in
-                                ArticleCardButton(article: entry.element, featured: entry.offset == 0)
+                                ArticleCardButton(article: entry.element, featured: entry.offset == 0, onOpen: onArticle)
                             }
                             Button("查看全部归档  →") { onArchive("") }.font(.system(size: 14)).padding(.top, 20)
                         }
@@ -127,14 +128,14 @@ private struct ArticleFrameKey: PreferenceKey {
 
 struct ArticleCardButton: View {
     @EnvironmentObject private var store: BlogStore
-    @Environment(\.openArticleCard) private var openArticle
     @Environment(\.activeArticleCard) private var activeArticle
     @State private var frame = CGRect.zero
     @State private var qaOpened = false
     let article: Article
     var featured = false
+    let onOpen: (String, CGRect, Bool) -> Void
     var body: some View {
-        Button { openArticle?(article.id, frame, featured) } label: {
+        Button { onOpen(article.id, frame, featured) } label: {
             WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
         }.buttonStyle(.plain)
             .opacity(activeArticle == article.id ? 0 : 1)
@@ -144,12 +145,12 @@ struct ArticleCardButton: View {
                     Color.clear.preference(key: ArticleFrameKey.self, value: proxy.frame(in: .named("article-stage")))
                 }
             }
-            .onPreferenceChange(ArticleFrameKey.self) { next in
-                frame = next
+            .onPreferenceChange(ArticleFrameKey.self) { frame = $0 }
+            .onAppear {
                 #if DEBUG
-                if featured && !qaOpened && next.minY > 0 && next.minY < 600 && ProcessInfo.processInfo.arguments.contains("--qa-motion") {
+                if featured && !qaOpened && ProcessInfo.processInfo.arguments.contains("--qa-motion") {
                     qaOpened = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { openArticle?(article.id, frame, featured) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) { onOpen(article.id, frame, featured) }
                 }
                 #endif
             }

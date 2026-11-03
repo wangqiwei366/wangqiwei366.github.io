@@ -93,10 +93,10 @@ struct RootView: View {
         NavigationStack(path: $path) {
             Group {
                 switch selected {
-                case 1: LibraryView(favoritesOnly: false, initialTag: archiveTag, searchInitially: searchOpen).id("\(archiveTag)-\(searchOpen)")
-                case 2: LibraryView(favoritesOnly: true)
+                case 1: LibraryView(favoritesOnly: false, initialTag: archiveTag, searchInitially: searchOpen, onArticle: openCard).id("\(archiveTag)-\(searchOpen)")
+                case 2: LibraryView(favoritesOnly: true, onArticle: openCard)
                 case 3: AboutView()
-                default: HomeView(onArchive: { tag in archiveTag = tag; searchOpen = false; selected = 1 }, onAbout: { selected = 3 })
+                default: HomeView(onArchive: { tag in archiveTag = tag; searchOpen = false; selected = 1 }, onAbout: { selected = 3 }, onArticle: openCard)
                 }
             }
             .id(selected)
@@ -115,10 +115,6 @@ struct RootView: View {
         }
         .accessibilityHidden(expandedArticleID != nil)
         .environment(\.activeArticleCard, expandedArticleID)
-        .environment(\.openArticleCard, { id, frame, featured in
-            guard expandedArticleID == nil else { return }
-            articleSourceFrame = frame; articleSourceFeatured = featured; expandedArticleID = id
-        })
         .ignoresSafeArea(.container, edges: .top)
         .overlay {
             GeometryReader { viewport in
@@ -179,6 +175,13 @@ struct RootView: View {
             guard abs(value.translation.width) > 60, abs(value.translation.width) > abs(value.translation.height) * 2 else { return }
             selectTab(min(3, max(0, selected + (value.translation.width < 0 ? 1 : -1))))
         })
+    }
+    private func openCard(_ id: String, _ frame: CGRect, _ featured: Bool) {
+        guard expandedArticleID == nil else { return }
+        articleSourceFrame = frame; articleSourceFeatured = featured; expandedArticleID = id
+        #if DEBUG
+        recordCardQA("callback", articleID: id, frame: frame)
+        #endif
     }
     private func selectTab(_ next: Int) {
         withAnimation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9)) {
@@ -243,6 +246,10 @@ private struct ArticleCardExpansion: View {
                 withAnimation(.easeOut(duration: 0.24)) { ghostVisible = false }
                 withAnimation(.easeOut(duration: 0.46).delay(0.14)) { revealed = true }
             }
+            #if DEBUG
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            if !Task.isCancelled && expanded { recordCardQA("expanded", articleID: article.id, frame: origin) }
+            #endif
         }
     }
     private func close() {
@@ -266,16 +273,20 @@ private struct ActiveArticleCardKey: EnvironmentKey {
     static let defaultValue: String? = nil
 }
 
-private struct ArticleOpenKey: EnvironmentKey {
-    static let defaultValue: ((String, CGRect, Bool) -> Void)? = nil
-}
 extension EnvironmentValues {
     var activeArticleCard: String? {
         get { self[ActiveArticleCardKey.self] }
         set { self[ActiveArticleCardKey.self] = newValue }
     }
-    var openArticleCard: ((String, CGRect, Bool) -> Void)? {
-        get { self[ArticleOpenKey.self] }
-        set { self[ArticleOpenKey.self] = newValue }
+}
+
+#if DEBUG
+private func recordCardQA(_ phase: String, articleID: String, frame: CGRect) {
+    guard ProcessInfo.processInfo.arguments.contains("--qa-motion"),
+          let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+    let state: [String: Any] = ["phase": phase, "articleID": articleID, "x": frame.minX, "y": frame.minY, "width": frame.width, "height": frame.height]
+    if let data = try? JSONSerialization.data(withJSONObject: state, options: [.sortedKeys]) {
+        try? data.write(to: directory.appendingPathComponent("qa-card-state.json"), options: .atomic)
     }
 }
+#endif
