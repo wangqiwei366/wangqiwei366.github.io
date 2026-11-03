@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import UIKit
 
 struct HomeView: View {
     @EnvironmentObject private var store: BlogStore
@@ -121,36 +122,41 @@ private func articleExcerpt(_ article: Article) -> String {
     return clean.count > 180 ? String(clean.prefix(180)) + "…" : clean
 }
 
-private struct ArticleFrameKey: PreferenceKey {
-    static let defaultValue = CGRect.zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) { value = nextValue() }
-}
-
 struct ArticleCardButton: View {
     @EnvironmentObject private var store: BlogStore
     @Environment(\.activeArticleCard) private var activeArticle
-    @State private var frame = CGRect.zero
     @State private var qaOpened = false
     let article: Article
     var featured = false
     let onOpen: (String, CGRect, Bool) -> Void
     var body: some View {
-        Button { onOpen(article.id, frame, featured) } label: {
-            WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
-        }.buttonStyle(.plain)
-            .opacity(activeArticle == article.id ? 0 : 1)
-            .accessibilityLabel("阅读文章：\(article.title)")
-            .background {
+        WebsiteArticleRow(article: article, featured: featured, favorite: store.isFavorite(article))
+            .accessibilityHidden(true)
+            .overlay {
                 GeometryReader { proxy in
-                    Color.clear.preference(key: ArticleFrameKey.self, value: proxy.frame(in: .named("article-stage")))
+                    cardAction(frame: proxy.frame(in: .named("article-stage")))
                 }
             }
-            .onPreferenceChange(ArticleFrameKey.self) { frame = $0 }
-            .onAppear {
+            .opacity(activeArticle == article.id ? 0 : 1)
+            .allowsHitTesting(activeArticle != article.id)
+    }
+
+    private func cardAction(frame: CGRect) -> some View {
+        Button { onOpen(article.id, frame, featured) } label: {
+            Color.clear.contentShape(Rectangle())
+        }
+            .buttonStyle(.plain)
+            .accessibilityLabel("阅读文章：\(article.title)")
+            .task(id: frame) {
                 #if DEBUG
-                if featured && !qaOpened && ProcessInfo.processInfo.arguments.contains("--qa-motion") {
-                    qaOpened = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) { onOpen(article.id, frame, featured) }
+                guard featured && !qaOpened && ProcessInfo.processInfo.arguments.contains("--qa-motion"),
+                      frame.width > 1, frame.height > 1, frame.maxY > 0,
+                      frame.minY < UIScreen.main.bounds.height else { return }
+                do { try await Task.sleep(nanoseconds: 3_000_000_000) } catch { return }
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard !qaOpened else { return }
+                    qaOpened = true; onOpen(article.id, frame, featured)
                 }
                 #endif
             }

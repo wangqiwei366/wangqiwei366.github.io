@@ -46,15 +46,29 @@ ditto -c -k --sequesterRsrc --keepParent "$app" "$artifacts/KimiBlog-$family-Sim
 
 # Exercise the real card callback and capture intermediate native animation frames.
 xcrun simctl terminate "$simulator_id" com.kimi.blog || true
+container="$(xcrun simctl get_app_container "$simulator_id" com.kimi.blog data)"
+rm -f "$container/Documents/qa-card-state.json"
 xcrun simctl io "$simulator_id" recordVideo --codec=h264 --force "$artifacts/card-expansion.mp4" > "$artifacts/card-recording.log" 2>&1 &
 recording_pid=$!
 xcrun simctl launch "$simulator_id" com.kimi.blog --qa-motion
-sleep 20
+# Wait for the actual reader state; a busy simulator can miss fixed delays.
+for attempt in {1..60}; do
+  if python3 - "$container/Documents/qa-card-state.json" <<'PY'
+import json,sys
+try:
+    state=json.load(open(sys.argv[1]))
+    sys.exit(0 if state['phase']=='expanded' and state['width']>1 and state['height']>1 else 1)
+except (OSError,ValueError,KeyError):
+    sys.exit(1)
+PY
+  then break; fi
+  sleep 1
+done
+sleep 2
 kill -INT "$recording_pid" || true
 wait "$recording_pid" || true
 xcrun simctl io "$simulator_id" screenshot "$artifacts/card-expanded.png"
 
-container="$(xcrun simctl get_app_container "$simulator_id" com.kimi.blog data)"
 cp "$container/Documents/qa-card-state.json" "$artifacts/card-state.json"
 python3 - "$artifacts/card-state.json" <<'PY'
 import json,sys

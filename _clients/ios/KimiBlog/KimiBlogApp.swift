@@ -84,19 +84,17 @@ struct RootView: View {
     @Namespace private var dockSelection
     @State private var selected = 0
     @State private var path: [String] = []
-    @State private var expandedArticleID: String?
-    @State private var articleSourceFrame = CGRect.zero
-    @State private var articleSourceFeatured = false
+    @StateObject private var articlePresentation = ArticlePresentation()
     @State private var archiveTag = ""
     @State private var searchOpen = false
     var body: some View {
         NavigationStack(path: $path) {
             Group {
                 switch selected {
-                case 1: LibraryView(favoritesOnly: false, initialTag: archiveTag, searchInitially: searchOpen, onArticle: openCard).id("\(archiveTag)-\(searchOpen)")
-                case 2: LibraryView(favoritesOnly: true, onArticle: openCard)
+                case 1: LibraryView(favoritesOnly: false, initialTag: archiveTag, searchInitially: searchOpen, onArticle: articlePresentation.open).id("\(archiveTag)-\(searchOpen)")
+                case 2: LibraryView(favoritesOnly: true, onArticle: articlePresentation.open)
                 case 3: AboutView()
-                default: HomeView(onArchive: { tag in archiveTag = tag; searchOpen = false; selected = 1 }, onAbout: { selected = 3 }, onArticle: openCard)
+                default: HomeView(onArchive: { tag in archiveTag = tag; searchOpen = false; selected = 1 }, onAbout: { selected = 3 }, onArticle: articlePresentation.open)
                 }
             }
             .id(selected)
@@ -113,16 +111,16 @@ struct RootView: View {
             }
             #endif
         }
-        .accessibilityHidden(expandedArticleID != nil)
-        .environment(\.activeArticleCard, expandedArticleID)
+        .accessibilityHidden(articlePresentation.selection != nil)
+        .environment(\.activeArticleCard, articlePresentation.selection?.id)
         .ignoresSafeArea(.container, edges: .top)
         .overlay {
             GeometryReader { viewport in
-                if let id = expandedArticleID, let article = store.article(id) {
-                    ArticleCardExpansion(article: article, source: articleSourceFrame,
-                        featured: articleSourceFeatured, viewport: viewport.size) {
-                            if expandedArticleID == id { expandedArticleID = nil }
-                        }.id(id)
+                if let selection = articlePresentation.selection, let article = store.article(selection.id) {
+                    ArticleCardExpansion(article: article, source: selection.frame,
+                        featured: selection.featured, viewport: viewport.size) {
+                            articlePresentation.dismiss(selection.id)
+                        }.id(selection.id)
                 }
             }
         }
@@ -176,17 +174,33 @@ struct RootView: View {
             selectTab(min(3, max(0, selected + (value.translation.width < 0 ? 1 : -1))))
         })
     }
-    private func openCard(_ id: String, _ frame: CGRect, _ featured: Bool) {
-        guard expandedArticleID == nil else { return }
-        articleSourceFrame = frame; articleSourceFeatured = featured; expandedArticleID = id
+    private func selectTab(_ next: Int) {
+        withAnimation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9)) {
+            articlePresentation.dismiss(); path.removeAll(); archiveTag = ""; searchOpen = false; selected = next
+        }
+    }
+}
+
+// Callbacks retain this reference across list refreshes and SwiftUI view updates.
+private final class ArticlePresentation: ObservableObject {
+    struct Selection {
+        let id: String
+        let frame: CGRect
+        let featured: Bool
+    }
+    @Published private(set) var selection: Selection?
+
+    func open(_ id: String, _ frame: CGRect, _ featured: Bool) {
+        guard selection == nil, frame.width > 1, frame.height > 1 else { return }
+        selection = Selection(id: id, frame: frame, featured: featured)
         #if DEBUG
         recordCardQA("callback", articleID: id, frame: frame)
         #endif
     }
-    private func selectTab(_ next: Int) {
-        withAnimation(reduceMotion ? nil : .spring(response: 0.58, dampingFraction: 0.9)) {
-            expandedArticleID = nil; path.removeAll(); archiveTag = ""; searchOpen = false; selected = next
-        }
+
+    func dismiss(_ id: String? = nil) {
+        guard id == nil || selection?.id == id else { return }
+        selection = nil
     }
 }
 
@@ -203,9 +217,7 @@ private struct ArticleCardExpansion: View {
     @State private var revealed = false
     @State private var closing = false
     @State private var ghostVisible = true
-    private var origin: CGRect {
-        source.width > 1 && source.height > 1 ? source : CGRect(x: 20, y: viewport.height * 0.4, width: max(1, viewport.width - 40), height: 180)
-    }
+    private var origin: CGRect { source }
     var body: some View {
         ZStack(alignment: .topLeading) {
             ZStack {
