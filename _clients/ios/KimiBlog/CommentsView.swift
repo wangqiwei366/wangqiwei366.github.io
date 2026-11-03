@@ -4,9 +4,18 @@ import Security
 struct CommentUser: Codable { let id: String; let nickname: String }
 struct BlogComment: Codable, Identifiable, Equatable {
     let id: String
+    var userId: String? = nil
     let nickname: String
     let body: String
     let createdAt: String
+    static func ordered(_ comments: [BlogComment], userID: String?) -> [BlogComment] {
+        comments.sorted { a, b in
+            let aOwn = userID != nil && a.userId == userID
+            let bOwn = userID != nil && b.userId == userID
+            if aOwn != bOwn { return aOwn }
+            return a.createdAt == b.createdAt ? a.id > b.id : a.createdAt > b.createdAt
+        }
+    }
 }
 struct CommentEnvelope: Codable {
     let ok: Bool?
@@ -27,7 +36,7 @@ enum CommentsAPI {
         let path = Site.safeURL(value).flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: true)?.percentEncodedPath } ?? "/"
         return path.replacingOccurrences(of: "index.html", with: "").hasSuffix("/") ? path.replacingOccurrences(of: "index.html", with: "") : path + "/"
     }
-    static func request(_ path: String, body: [String: String]? = nil, token: String? = nil, article: String? = nil) async throws -> CommentEnvelope {
+    static func request(_ path: String, body: [String: String]? = nil, token: String? = nil, article: String? = nil, method: String? = nil) async throws -> CommentEnvelope {
         var parts = URLComponents(string: base + path)!
         if let article { parts.queryItems = [URLQueryItem(name: "article", value: article)] }
         var request = URLRequest(url: parts.url!, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 25)
@@ -39,6 +48,7 @@ enum CommentsAPI {
             request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONEncoder().encode(body)
         }
+        if let method { request.httpMethod = method }
         let (data, response) = try await URLSession.shared.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         let result = try JSONDecoder().decode(CommentEnvelope.self, from: data)
@@ -76,8 +86,8 @@ final class CommentAccount: ObservableObject {
     }
     func validate() async {
         guard let token = session?.token else { return }
-        do { let result = try await CommentsAPI.request("/auth/me", token: token); if result.user == nil { clear() } }
-        catch let error as CommentFailure { if error.status == 401 { clear() } }
+        do { let result = try await CommentsAPI.request("/auth/me", token: token); if session?.token == token && result.user == nil { clear() } }
+        catch let error as CommentFailure { if session?.token == token && error.status == 401 { clear() } }
         catch { } // A temporary network failure must not log the user out.
     }
 }
@@ -107,6 +117,17 @@ struct CommentsView: View {
     @State private var sending = false
     @State private var showingAuth = false
     @State private var register = false
+    @State private var pendingDelete: BlogComment?
+    @State private var deletePrompt = false
+    @State private var deleting = false
+    @State private var mutation = 0
+    private func isOwn(_ comment: BlogComment) -> Bool {
+        guard let id = account.session?.user?.id else { return false }
+        return comment.userId == id
+    }
+    private func askDelete(_ comment: BlogComment) {
+        if isOwn(comment) && !deleting { pendingDelete = comment; deletePrompt = true }
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("评论").font(.title2.bold())
@@ -135,35 +156,47 @@ struct CommentsView: View {
             }.buttonStyle(CommentPillStyle(fillsWidth: true))
             Text(status).font(.caption).foregroundStyle(.secondary).accessibilityLabel(status)
             if comments.isEmpty { Text("还没有评论，欢迎留下第一条。").font(.subheadline).foregroundStyle(.secondary) }
-            ForEach(comments.reversed()) { comment in
+            ForEach(BlogComment.ordered(comments, userID: account.session?.user?.id)) { comment in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(comment.nickname).font(.subheadline.bold())
+                    Text(comment.nickname + (isOwn(comment) ? " · 我" : "")).font(.subheadline.bold())
                     Text(comment.createdAt.replacingOccurrences(of: "T", with: " ").replacingOccurrences(of: "Z", with: " UTC")).font(.caption).foregroundStyle(.secondary)
-                    Text(comment.body).font(.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                    Text(comment.body).font(.body).fixedSize(horizontal: false, vertical: true)
+                    if isOwn(comment) {
+                        Button("删除") { askDelete(comment) }.font(.caption).buttonStyle(CommentPillStyle())
+                    }
                     Divider()
                 }
+                .contentShape(Rectangle())
+                .onLongPressGesture(minimumDuration: 0.6, maximumDistance: 12) { askDelete(comment) }
             }
         }
         .padding(20).background(Palette.paper)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Palette.line.opacity(0.35), lineWidth: 1))
         .tint(Palette.ink)
+        .alert("删除这条评论？", isPresented: $deletePrompt) {
+            Button("取消", role: .cancel) { pendingDelete = nil }
+            Button("删除评论", role: .destructive) {
+                if let comment = pendingDelete { Task { await remove(comment) } }
+            }
+        } message: { Text("删除后会同步到网站和所有客户端，无法撤销。") }
         .sheet(isPresented: $showingAuth) { CommentLoginView(register: register).environmentObject(account) }
         .task(id: articleURL) {
             await account.validate()
             if scenePhase == .active { await reload() }
         }
         .onReceive(Timer.publish(every: 10, on: .main, in: .common).autoconnect()) { _ in
-            if scenePhase == .active { Task { await reload() } }
+            if scenePhase == .active { Task { await reload(); await account.validate() } }
         }
         .onChange(of: scenePhase) { phase in if phase == .active { Task { await reload(); await account.validate() } } }
     }
     @MainActor private func reload(silent: Bool = true) async {
-        guard !refreshInFlight else { return }; refreshInFlight = true
+        guard !refreshInFlight && !sending && !deleting else { return }; refreshInFlight = true
+        let revision = mutation
         if !silent { loading = true }
         defer { refreshInFlight = false; if !silent { loading = false } }
         do {
             let result = try await CommentsAPI.request("/comments", article: CommentsAPI.articleID(articleURL))
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled && revision == mutation else { return }
             let next = result.comments ?? []; if comments != next { comments = next }
             if !silent { status = "\(comments.count) 条评论" }
         } catch { if !silent && !Task.isCancelled { status = "同步失败，保留已有评论：" + error.localizedDescription } }
@@ -173,12 +206,24 @@ struct CommentsView: View {
         guard let token = account.session?.token else { register = false; showingAuth = true; return }
         let body = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !body.isEmpty else { status = "请先填写评论内容"; return }
-        sending = true; defer { sending = false }
+        sending = true; mutation += 1; defer { sending = false; mutation += 1 }
         do {
             _ = try await CommentsAPI.request("/comments", body: ["articleId": CommentsAPI.articleID(articleURL), "body": body], token: token)
-            draft = ""; status = "评论已发布"; await reload()
+            draft = ""; status = "评论已发布"; sending = false; await reload()
         } catch {
             if let failure = error as? CommentFailure, failure.status == 401 { account.clear() }
+            status = error.localizedDescription
+        }
+    }
+    @MainActor private func remove(_ comment: BlogComment) async {
+        guard !deleting, isOwn(comment), let token = account.session?.token else { return }
+        deleting = true; mutation += 1
+        defer { deleting = false; pendingDelete = nil; mutation += 1 }
+        do {
+            _ = try await CommentsAPI.request("/comments", body: ["id": comment.id], token: token, method: "DELETE")
+            comments.removeAll { $0.id == comment.id }; status = "评论已删除"
+        } catch {
+            if let failure = error as? CommentFailure, failure.status == 401, account.session?.token == token { account.clear() }
             status = error.localizedDescription
         }
     }

@@ -3,6 +3,17 @@ import XCTest
 
 @MainActor
 final class BlogStoreTests: XCTestCase {
+    func testCommentsPutOwnerFirstThenNewestWithStableTies() throws {
+        let data = Data("""
+        [{"id":"a","userId":"100001","nickname":"A","body":"old own","createdAt":"2026-01-01"},
+         {"id":"b","userId":"100002","nickname":"B","body":"new other","createdAt":"2026-03-01"},
+         {"id":"c","userId":"100001","nickname":"A","body":"new own","createdAt":"2026-02-01"}]
+        """.utf8)
+        let comments = try JSONDecoder().decode([BlogComment].self, from: data)
+        XCTAssertEqual(BlogComment.ordered(comments, userID: "100001").map(\.id), ["c", "a", "b"])
+        XCTAssertEqual(BlogComment.ordered(comments, userID: nil).map(\.id), ["b", "c", "a"])
+        XCTAssertEqual(BlogComment.ordered(comments, userID: "100002").map(\.id), ["b", "c", "a"])
+    }
     private func article(_ title: String, url: String, date: String, body: String = "") -> Article {
         Article(title: title, subtitle: "", url: url, date: date, tags: [], contentHtml: body)
     }
