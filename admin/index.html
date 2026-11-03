@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; media-src https: blob:; connect-src https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <title>网站在线运营台</title>
     <link rel="icon" href="../img/favicon.ico">
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=2.2.1">
   </head>
   <body>
     <aside class="sidebar">
@@ -21,6 +21,7 @@
         <button class="nav active" data-view="dashboard">总览</button>
         <button class="nav" data-view="publish">发布新文章</button>
         <button class="nav" data-view="posts">文章管理</button>
+        <button class="nav" data-view="comments">评论</button>
         <button class="nav" data-view="about">自我介绍</button>
         <button class="nav" data-view="progress">发布进度</button>
       </nav>
@@ -155,6 +156,28 @@
         </div>
       </section>
 
+      <section class="view" id="commentsView">
+        <article class="panel moderation-panel">
+          <div class="panel-head"><div><h2>评论</h2><p class="meta">管理各端评论与账号，操作自动同步。</p></div><button class="ghost" id="moderationRefresh">刷新</button></div>
+          <div class="connection-mode" role="tablist" aria-label="评论管理">
+            <button class="mode-button active" data-moderation-tab="comments" role="tab" aria-selected="true">评论管理</button>
+            <button class="mode-button" data-moderation-tab="users" role="tab" aria-selected="false">用户管理</button>
+          </div>
+          <div id="moderationConnection" class="moderation-connection">
+            <p class="meta">评论和账号保存在私密后端。输入管理密码即可管理。</p>
+            <label>管理密码<input id="moderationPassword" type="password" autocomplete="off" placeholder="输入管理密码"></label>
+            <button class="primary" id="moderationConnect">连接评论管理</button>
+          </div>
+          <form id="moderationSearchForm" class="moderation-search">
+            <label>搜索<input id="moderationSearch" type="search" placeholder="评论内容、昵称、用户 ID 或文章路径"></label>
+            <button class="ghost" type="submit">搜索</button>
+          </form>
+          <p class="meta" id="moderationStatus" role="status" aria-live="polite">连接后可查看评论与用户。</p>
+          <div id="moderationList" class="list" role="tabpanel"></div>
+          <div class="actions moderation-pagination"><button class="ghost" id="moderationPrev" disabled>上一页</button><span id="moderationPage">第 1 页</span><button class="ghost" id="moderationNext" disabled>下一页</button></div>
+        </article>
+      </section>
+
       <section class="view" id="aboutView">
         <article class="panel">
           <div class="panel-head">
@@ -191,6 +214,7 @@
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=2.2.1"></script>
+    <script src="moderation.js?v=2.2.1"></script>
   </body>
 </html>

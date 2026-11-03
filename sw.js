@@ -9,7 +9,7 @@
 // CACHE_NAMESPACE
 // CacheStorage is shared between all sites under same domain.
 // A namespace can prevent potential name conflicts and mis-deletion.
-const CACHE_NAMESPACE = 'kimi-v16-'
+const CACHE_NAMESPACE = 'kimi-v18-'
 
 const CACHE = CACHE_NAMESPACE + 'precache-then-runtime';
 const PRECACHE_LIST = [

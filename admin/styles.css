@@ -559,3 +559,19 @@ textarea:focus {
     flex: 1;
   }
 }
+
+.moderation-panel { max-width: 1100px; }
+.moderation-connection { display: grid; gap: 12px; margin: 20px 0; }
+.moderation-connection[hidden] { display: none; }
+.moderation-panel .panel-head > div { flex: 1; min-width: 0; }
+.moderation-panel .panel-head > button { flex-shrink: 0; white-space: nowrap; min-width: 64px; }
+.moderation-search { display: flex; gap: 12px; align-items: end; margin: 20px 0; }
+.moderation-search label { flex: 1; min-width: 0; }
+.moderation-item { display: flex; justify-content: space-between; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+.moderation-info { min-width: 0; overflow-wrap: anywhere; }
+.moderation-info p, .moderation-info time { margin-top: 8px; display: block; }
+.moderation-body { white-space: pre-wrap; line-height: 1.7; }
+.moderation-item .actions { flex-shrink: 0; align-content: center; }
+.moderation-panel button { border-radius: 999px; min-height: 42px; }
+.moderation-pagination { margin-top: 20px; }
+@media (max-width: 700px) { .moderation-item { flex-direction: column; } .moderation-item .actions { justify-content: flex-start; } .moderation-panel .panel-head { align-items: start; } }

@@ -19,5 +19,22 @@
 - `POST /auth/logout`：带 Bearer token 删除当前会话。
 - `GET /comments?article=<page.url>`：读取文章评论。
 - `POST /comments`：带 Bearer token，提交 `{ "articleId": "<page.url>", "body": "评论内容" }`。
+- `DELETE /comments`：带 Bearer token，提交 `{ "id": "评论 ID" }`。服务器只允许本人删除；他人评论返回 403，已删除的评论重复删除返回成功。
 
 评论正文最多 2000 个字符，昵称最多 40 个字符。会话默认 30 天有效，Worker 会在 D1 中保存 token 的 SHA-256 摘要而不是明文 token。
+
+## 2.2.1 评论与用户管理
+
+升级已有数据库时，先执行 `migrations/0002_moderation.sql`，再部署 Worker。迁移只新增账号状态表和索引，不清空用户、会话或评论。新数据库执行完整 `schema.sql` 即可。
+
+网页运营台 `/admin/` 的“评论”面板中包含“评论管理”和“用户管理”。两者均使用现有私密后端管理密码；GitHub 令牌不能作为评论管理凭证。
+
+以下接口均要求 `X-Admin-Password`：
+
+- `GET /admin/comments?q=<关键词>&offset=0`：搜索评论正文、昵称、用户 ID 和文章路径。每页 50 条，返回 `hasMore`。
+- `DELETE /admin/comments`：`{ "id": "评论 ID" }`，管理员删除评论。
+- `GET /admin/users?q=<关键词>&offset=0`：搜索昵称或用户 ID，返回账号状态、注册时间和评论数，不返回密码哈希、salt 或会话。
+- `POST /admin/users`：`{ "id": "用户 ID", "disabled": true }` 停用账号并撤销全部会话；`false` 恢复账号，用户需重新登录。
+- `POST /admin/users`：`{ "id": "用户 ID", "nickname": "新昵称" }` 修改昵称并同步已有评论署名。
+
+网页和客户端在各自显示层按“本人优先、组内最新在前”排列评论。删除后各端在下次进入或最多约 10 秒的前台刷新周期内同步；网络离线时在恢复后同步。客户端保留编辑草稿，并丢弃删除前发出的过期读取响应。

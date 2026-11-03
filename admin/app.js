@@ -54,6 +54,7 @@ function setView(name) {
     dashboard: ["总览", "在任何设备上管理这个 GitHub Pages 网站。"],
     publish: [state.editing ? "修改文章" : "发布新文章", state.editing ? "保存后会覆盖原文章。" : "写完后直接发布到 GitHub。"],
     posts: ["文章管理", "查看、修改或删除已经发布的文章。"],
+    comments: ["评论", "在同一个评论面板里管理评论与用户。"],
     about: ["自我介绍", "修改网站 About 页面里的个人介绍。"],
     progress: ["发布进度", "查看每次操作记录。"],
   };
@@ -110,7 +111,7 @@ async function workerApi(path, options = {}) {
 }
 
 function renderConnectionState(message = "") {
-  $$(".mode-button").forEach((button) => {
+  $$(".mode-button[data-mode]").forEach((button) => {
     const active = button.dataset.mode === state.connectionMode;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
@@ -568,6 +569,7 @@ function resetEditor() {
 }
 
 function clearRepositoryState() {
+  window.dispatchEvent(new Event("admin-connection-reset"));
   state.repositoryRevision += 1;
   state.posts = [];
   state.current = null;
@@ -1036,7 +1038,7 @@ function updateServiceWorker() {
 
 function bind() {
   $$(".nav").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
-  $$(".mode-button").forEach((button) => button.addEventListener("click", () => setConnectionMode(button.dataset.mode)));
+  $$(".mode-button[data-mode]").forEach((button) => button.addEventListener("click", () => setConnectionMode(button.dataset.mode)));
   $("#newPostBtn").addEventListener("click", () => {
     resetEditor();
     setView("publish");

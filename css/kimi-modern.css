@@ -4089,3 +4089,14 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 @media (prefers-reduced-motion: reduce) {
   .navbar-custom, .navbar-custom.nav-scroll-hidden { transition: none !important; }
 }
+
+/* 2.2.1: owner actions and confirmation share the comment capsule style. */
+.comments-own-label { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #eaf0f3; color: #42515c; }
+.comments-own-delete { min-height: 36px; padding: 6px 16px; border: 1px solid #d7dee3; border-radius: 999px; background: #f4f7f8; color: #42515c; font-size: 13px; }
+.comments-item.is-own { touch-action: pan-y; -webkit-touch-callout: none; }
+.comments-delete-dialog { width: min(420px, calc(100vw - 40px)); padding: 24px; border: 1px solid #d7dee3; border-radius: 24px; background: #fff; color: #17212b; box-shadow: 0 24px 80px #17212b33; }
+.comments-delete-dialog::backdrop { background: #17212b66; backdrop-filter: blur(4px); }
+.comments-delete-dialog h3 { margin: 0 0 14px; font-size: 22px; }
+.comments-delete-dialog p { font-size: 15px; line-height: 1.7; }
+.comments-delete-actions { display: flex; gap: 12px; margin-top: 22px; }
+.comments-delete-actions .comments-button { flex: 1; border-radius: 999px; min-height: 44px; }

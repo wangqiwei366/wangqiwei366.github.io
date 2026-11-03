@@ -30,10 +30,12 @@ export default {
         return await handlePublicRoute(request, env, url);
       }
 
-      if (!env.GITHUB_TOKEN) throw new Error("Worker missing GITHUB_TOKEN");
       if (!env.ADMIN_PASSWORD) throw new Error("Worker missing ADMIN_PASSWORD");
       const password = request.headers.get("X-Admin-Password") || "";
       if (password !== env.ADMIN_PASSWORD) return json({ ok: false, error: "管理密码不正确" }, 401);
+
+      if (url.pathname.startsWith("/admin/")) return await handleModeration(request, env, url);
+      if (!env.GITHUB_TOKEN) throw new Error("Worker missing GITHUB_TOKEN");
 
       if (request.method === "GET" && url.pathname === "/health") return json({ ok: true, repo: `${OWNER}/${REPO}` });
       if (request.method === "GET" && url.pathname === "/posts") return json({ ok: true, posts: await listPosts(env) });
@@ -50,11 +52,22 @@ export default {
 };
 
 function isPublicRoute(method, pathname) {
-  return (method === "GET" && (pathname === "/comments" || pathname === "/auth/me"))
+  return (method === "DELETE" && pathname === "/comments")
+    || (method === "GET" && (pathname === "/comments" || pathname === "/auth/me"))
     || (method === "POST" && (pathname === "/comments" || pathname === "/auth/register" || pathname === "/auth/login" || pathname === "/auth/logout"));
 }
 
 async function handlePublicRoute(request, env, url) {
+  if (request.method === "DELETE" && url.pathname === "/comments") {
+    const session = await requireAuthentication(request, env);
+    const { id } = await parseJsonBody(request);
+    const commentId = validRecordId(id);
+    const db = requireDatabase(env);
+    const comment = await db.prepare("SELECT user_id AS userId FROM comments WHERE id = ?").bind(commentId).first();
+    if (comment && String(comment.userId) !== String(session.user.id)) throw httpError(403, "只能删除自己发表的评论");
+    await db.prepare("DELETE FROM comments WHERE id = ? AND user_id = ?").bind(commentId, session.user.id).run();
+    return json({ ok: true, deletedId: commentId });
+  }
   if (request.method === "GET" && url.pathname === "/comments") {
     const article = normalizeArticleId(url.searchParams.get("article") || url.searchParams.get("post") || url.searchParams.get("path"));
     if (!article) throw httpError(400, "缺少文章标识");
@@ -110,6 +123,57 @@ function httpError(status, message) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function validRecordId(value) {
+  if (typeof value !== "string" || !value.trim() || value.length > 128) throw httpError(400, "缺少有效 ID");
+  return value.trim();
+}
+
+// All routes in this handler require the existing private administrator password.
+async function handleModeration(request, env, url) {
+  const db = requireDatabase(env);
+  const offset = Math.max(0, Math.min(1000000, parseInt(url.searchParams.get("offset"), 10) || 0));
+  const query = String(url.searchParams.get("q") || "").trim().slice(0, 200);
+  const search = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
+  if (request.method === "GET" && url.pathname === "/admin/comments") {
+    const rows = await db.prepare("SELECT id, article_id AS articleId, user_id AS userId, nickname, body, created_at AS createdAt FROM comments WHERE body LIKE ? ESCAPE '\\' OR nickname LIKE ? ESCAPE '\\' OR user_id LIKE ? ESCAPE '\\' OR article_id LIKE ? ESCAPE '\\' ORDER BY created_at DESC, id DESC LIMIT 51 OFFSET ?")
+      .bind(search, search, search, search, offset).all();
+    const items = rows.results || [];
+    return json({ ok: true, comments: items.slice(0, 50), hasMore: items.length > 50 });
+  }
+  if (request.method === "DELETE" && url.pathname === "/admin/comments") {
+    const id = validRecordId((await parseJsonBody(request)).id);
+    await db.prepare("DELETE FROM comments WHERE id = ?").bind(id).run();
+    return json({ ok: true, deletedId: id });
+  }
+  if (request.method === "GET" && url.pathname === "/admin/users") {
+    const rows = await db.prepare("SELECT u.id, u.nickname, u.created_at AS createdAt, COALESCE(m.disabled, 0) AS disabled, (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.id) AS commentCount FROM users u LEFT JOIN user_moderation m ON m.user_id = u.id WHERE u.id LIKE ? ESCAPE '\\' OR u.nickname LIKE ? ESCAPE '\\' ORDER BY u.created_at DESC, u.id DESC LIMIT 51 OFFSET ?")
+      .bind(search, search, offset).all();
+    const items = rows.results || [];
+    return json({ ok: true, users: items.slice(0, 50), hasMore: items.length > 50 });
+  }
+  if (request.method === "POST" && url.pathname === "/admin/users") {
+    const payload = await parseJsonBody(request);
+    const id = validRecordId(payload.id);
+    if (!(await db.prepare("SELECT id FROM users WHERE id = ?").bind(id).first())) throw httpError(404, "用户不存在");
+    const statements = [];
+    if (Object.hasOwn(payload, "disabled")) {
+      if (typeof payload.disabled !== "boolean") throw httpError(400, "账号状态无效");
+      statements.push(db.prepare("INSERT INTO user_moderation (user_id, disabled, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET disabled = excluded.disabled, updated_at = excluded.updated_at")
+        .bind(id, payload.disabled ? 1 : 0, new Date().toISOString()));
+      if (payload.disabled) statements.push(db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(id));
+    }
+    if (Object.hasOwn(payload, "nickname")) {
+      const nickname = cleanNickname(payload.nickname);
+      statements.push(db.prepare("UPDATE users SET nickname = ? WHERE id = ?").bind(nickname, id));
+      statements.push(db.prepare("UPDATE comments SET nickname = ? WHERE user_id = ?").bind(nickname, id));
+    }
+    if (!statements.length) throw httpError(400, "请选择要修改的账号状态或昵称");
+    await db.batch(statements);
+    return json({ ok: true });
+  }
+  return json({ ok: false, error: "没有这个接口" }, 404);
 }
 
 async function parseJsonBody(request) {
@@ -195,12 +259,15 @@ async function loginUser(env, payload) {
   if (!id || !password) throw httpError(400, "请输入用户 ID 和密码");
   if (!/^[1-9][0-9]{5}$/.test(id)) throw httpError(400, "请输入 6 位数字用户 ID");
   const db = requireDatabase(env);
-  const user = await db.prepare("SELECT id, nickname, password_hash AS passwordHash, password_salt AS passwordSalt, iterations, created_at AS createdAt FROM users WHERE id = ?").bind(id).first();
+  const user = await db.prepare("SELECT u.id, u.nickname, password_hash AS passwordHash, password_salt AS passwordSalt, iterations, created_at AS createdAt, COALESCE(m.disabled, 0) AS disabled FROM users u LEFT JOIN user_moderation m ON m.user_id = u.id WHERE u.id = ?").bind(id).first();
   if (!user || !(await verifyPassword(password, user))) throw httpError(401, "用户 ID 或密码不正确");
+  if (user.disabled) throw httpError(403, "该账号已被停用，请联系管理员");
   const token = await createSessionToken(env, user);
   const tokenHash = await hashSessionToken(token);
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-  await db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)").bind(tokenHash, user.id, expiresAt, new Date().toISOString()).run();
+  const inserted = await db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, created_at) SELECT ?, u.id, ?, ? FROM users u LEFT JOIN user_moderation m ON m.user_id = u.id WHERE u.id = ? AND COALESCE(m.disabled, 0) = 0")
+    .bind(tokenHash, expiresAt, new Date().toISOString(), user.id).run();
+  if (!inserted.meta?.changes) throw httpError(403, "该账号已被停用，请联系管理员");
   return { token, expiresAt: new Date(expiresAt * 1000).toISOString(), user: publicUser(user) };
 }
 
@@ -219,8 +286,9 @@ async function createComment(env, user, payload) {
     createdAt: new Date().toISOString(),
   };
   const db = requireDatabase(env);
-  await db.prepare("INSERT INTO comments (id, article_id, user_id, nickname, body, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-    .bind(comment.id, comment.articleId, comment.userId, comment.nickname, comment.body, comment.createdAt).run();
+  const result = await db.prepare("INSERT INTO comments (id, article_id, user_id, nickname, body, created_at) SELECT ?, ?, u.id, u.nickname, ?, ? FROM users u LEFT JOIN user_moderation m ON m.user_id = u.id WHERE u.id = ? AND COALESCE(m.disabled, 0) = 0")
+    .bind(comment.id, comment.articleId, comment.body, comment.createdAt, comment.userId).run();
+  if (!result.meta?.changes) throw httpError(401, "账号不可用，请重新登录");
   return comment;
 }
 
@@ -240,7 +308,7 @@ async function authenticate(request, env) {
     if (!token || token.length > 512) return null;
     const tokenHash = await hashSessionToken(token);
     const now = Math.floor(Date.now() / 1000);
-    const session = await db.prepare("SELECT u.id, u.nickname, u.created_at AS createdAt, s.expires_at AS expiresAt FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?").bind(tokenHash).first();
+    const session = await db.prepare("SELECT u.id, u.nickname, u.created_at AS createdAt, s.expires_at AS expiresAt FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN user_moderation m ON m.user_id = u.id WHERE s.token_hash = ? AND COALESCE(m.disabled, 0) = 0").bind(tokenHash).first();
     if (!session || Number(session.expiresAt) <= now) {
       if (session) await db.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
       return null;

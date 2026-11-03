@@ -74,6 +74,53 @@
     var session = readSession();
     var comments = [];
     var loadingComments = false;
+    var mutation = 0;
+    var deleting = false;
+    var rendered = "";
+
+    function isOwn(comment) { return Boolean(session && session.user && String(comment.userId) === String(session.user.id)); }
+
+    function confirmDelete(comment) {
+      if (deleting || !isOwn(comment) || root.querySelector("dialog")) return;
+      var dialog = createElement("dialog", "comments-delete-dialog");
+      dialog.appendChild(createElement("h3", "", "删除这条评论？"));
+      dialog.appendChild(createElement("p", "", "删除后会同步到网站和所有客户端，无法撤销。"));
+      var actions = createElement("div", "comments-delete-actions");
+      var cancel = createElement("button", "comments-button comments-button-secondary", "取消");
+      var remove = createElement("button", "comments-button", "删除评论");
+      cancel.type = remove.type = "button";
+      cancel.onclick = function () { dialog.close(); };
+      remove.onclick = function () {
+        if (!isOwn(comment)) { dialog.close(); return; }
+        deleting = true; mutation += 1; dialog.close();
+        api("/comments", { method: "DELETE", body: JSON.stringify({ id: comment.id }) })
+          .then(function () {
+            comments = comments.filter(function (item) { return item.id !== comment.id; });
+            renderComments(); setStatus("评论已删除", "success");
+          }).catch(function (error) {
+            setStatus(error.message, "error");
+            if (error.status === 401) { session = null; saveSession(null); renderAccount(); }
+          }).finally(function () { mutation += 1; deleting = false; loadComments(); });
+      };
+      actions.append(cancel, remove); dialog.appendChild(actions); root.appendChild(dialog);
+      dialog.addEventListener("close", function () { dialog.remove(); });
+      dialog.showModal(); cancel.focus();
+    }
+
+    function bindLongPress(item, comment) {
+      var timer, origin;
+      function cancel() { clearTimeout(timer); timer = null; }
+      item.addEventListener("pointerdown", function (event) {
+        if (event.button !== 0 || event.target.closest("button")) return;
+        origin = { x: event.clientX, y: event.clientY };
+        timer = setTimeout(function () { cancel(); confirmDelete(comment); }, 600);
+      });
+      item.addEventListener("pointermove", function (event) {
+        if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 12) cancel();
+      });
+      ["pointerup", "pointercancel", "pointerleave"].forEach(function (name) { item.addEventListener(name, cancel); });
+      item.addEventListener("contextmenu", function (event) { event.preventDefault(); cancel(); confirmDelete(comment); });
+    }
 
     function setStatus(message, kind) {
       elements.status.textContent = message || "";
@@ -104,14 +151,20 @@
     }
 
     function renderComments() {
+      var signature = JSON.stringify(comments) + (session && session.user ? session.user.id : "");
+      if (signature === rendered) return;
+      rendered = signature;
       elements.list.replaceChildren();
       elements.count.textContent = comments.length ? comments.length + " 条评论" : "暂时没有评论";
       if (!comments.length) {
         elements.list.appendChild(createElement("p", "comments-empty", "还没有评论，来留下第一条吧。"));
         return;
       }
-      comments.slice().reverse().forEach(function (comment) {
+      comments.slice().sort(function (a, b) {
+        return Number(isOwn(b)) - Number(isOwn(a)) || String(b.createdAt).localeCompare(String(a.createdAt)) || String(b.id).localeCompare(String(a.id));
+      }).forEach(function (comment) {
         var item = createElement("article", "comments-item");
+        item.dataset.commentId = comment.id;
         var header = createElement("header", "comments-item-header");
         var identity = createElement("div", "comments-item-identity");
         identity.appendChild(createElement("strong", "comments-item-name", comment.nickname || "访客"));
@@ -120,6 +173,14 @@
         header.appendChild(createElement("time", "comments-item-time", formatDate(comment.createdAt)));
         item.appendChild(header);
         item.appendChild(createElement("p", "comments-item-body", comment.body || ""));
+        if (isOwn(comment)) {
+          item.classList.add("is-own");
+          identity.appendChild(createElement("span", "comments-own-label", "我"));
+          var remove = createElement("button", "comments-own-delete", "删除");
+          remove.type = "button"; remove.setAttribute("aria-label", "删除自己的评论");
+          remove.onclick = function () { confirmDelete(comment); };
+          item.appendChild(remove); bindLongPress(item, comment);
+        }
         elements.list.appendChild(item);
       });
     }
@@ -134,6 +195,7 @@
         elements.userId.textContent = session.user.id || "";
         setMessage("");
       }
+      renderComments();
     }
 
     function setBusy(form, busy) {
@@ -163,7 +225,8 @@
     }
 
     function loadComments() {
-      if (loadingComments || elements.commentForm.classList.contains("is-busy")) return Promise.resolve();
+      if (loadingComments || deleting || elements.commentForm.classList.contains("is-busy")) return Promise.resolve();
+      var revision = mutation;
       if (!apiBase) {
         setStatus("评论服务未配置", "error");
         elements.list.replaceChildren(createElement("p", "comments-empty", "评论服务暂时不可用。"));
@@ -172,6 +235,7 @@
       loadingComments = true;
       return api("/comments?article=" + encodeURIComponent(articleId))
         .then(function (data) {
+          if (revision !== mutation) return;
           comments = Array.isArray(data.comments) ? data.comments : [];
           renderComments();
           setStatus("");
@@ -179,10 +243,11 @@
         .catch(function (error) {
           var message = serviceErrorMessage(error);
           if (!comments.length) {
+            rendered = "";
             elements.list.replaceChildren(createElement("p", "comments-empty", message));
             elements.count.textContent = "评论暂不可用";
+            setStatus(message, "error");
           }
-          setStatus(message, "error");
         }).finally(function () { loadingComments = false; });
     }
 
@@ -191,7 +256,9 @@
         renderAccount();
         return Promise.resolve();
       }
+      var expectedToken = session.token;
       return api("/auth/me").then(function (data) {
+        if (!session || session.token !== expectedToken) return;
         if (!data.user) {
           session = null;
           saveSession(null);
@@ -201,6 +268,7 @@
         }
         renderAccount();
       }).catch(function (error) {
+        if (!session || session.token !== expectedToken) return;
         if (error.status !== 401) return;
         session = null;
         saveSession(null);
@@ -277,6 +345,7 @@
       var body = String(new FormData(form).get("body") || "").trim();
       if (!body) return;
       setBusy(form, true);
+      mutation += 1;
       api("/comments", { method: "POST", body: JSON.stringify({ articleId: articleId, body: body }) })
         .then(function (result) {
           if (result.comment) comments.push(result.comment);
@@ -292,13 +361,16 @@
           }
           setStatus(error.message, "error");
         })
-        .finally(function () { setBusy(form, false); });
+        .finally(function () { mutation += 1; setBusy(form, false); });
     });
 
     renderAccount();
     Promise.all([loadComments(), refreshSession()]);
     // Refresh remote comments without rebuilding the composer or losing drafts.
-    window.setInterval(function () { if (!document.hidden) loadComments(); }, 30000);
+    window.setInterval(function () { if (!document.hidden) Promise.all([loadComments(), refreshSession()]); }, 10000);
+    window.addEventListener("storage", function (event) {
+      if (event.key === SESSION_KEY) { session = readSession(); renderAccount(); refreshSession(); }
+    });
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden) Promise.all([loadComments(), refreshSession()]);
     });
