@@ -1,7 +1,7 @@
 {
   "version": "2.1.3",
   "releaseDate": "2026-11-03",
-  "iosValidatedCommit": "09a74118379ed55ede3125354a5d3845e4baa8d5",
+  "iosValidatedCommit": "3f0f064d3593ba466a4045cf6fcbb26f768f07db",
   "artifacts": [
     {
       "platform": "Android",
@@ -35,8 +35,8 @@
       "url": "/downloads/KIMI-Blog-iOS-Source-2.1.3.zip",
       "version": "2.1.3",
       "build": 21003,
-      "sizeBytes": 18221960,
-      "sha256": "09fb59a8bf6513d80f964121e8d78b165808c52a21a62b6fb93ce8b4140a7a73",
+      "sizeBytes": 18221984,
+      "sha256": "b7e4f68dd7fbac87eb523f7a0a183339d62b4a91094b2d794fa0f9efecdd28f5",
       "requirements": "Mac/Xcode; Apple device/distribution signing required"
     },
     {
@@ -63,5 +63,13 @@
       "sha256": "f2da16102b18cda98cdea9f8b6a94f706144608ebe8bab87ed57fa75dddbdaee",
       "requirements": "OpenHarmony API 12; device signing and validation required"
     }
-  ]
+  ],
+  "iosValidation": {
+    "workflowRunId": 41596899165,
+    "iPhoneNativeTests": "passed",
+    "iPadNativeTests": "passed",
+    "iPadCardExpansion": "passed",
+    "releaseBuild": "passed",
+    "iPadArtifactUpload": "failed: GitHub ArtifactService timeout; expanded state verified from job log"
+  }
 }
