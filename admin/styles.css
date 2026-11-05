@@ -331,6 +331,44 @@ input {
   background: #f8fafc;
 }
 
+[hidden] { display: none !important; }
+.editor-mode { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.editor-mode .active { background: var(--soft); border-color: var(--accent); color: var(--accent); }
+.editor-hint { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 12px 0; }
+#richEditor { border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+#richEditor:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15,118,110,.1); }
+#richEditor .ql-editor, #preview, #readerBody { font-family: "Songti SC", "SimSun", serif; font-size: 18px; line-height: 1.95; overflow-wrap: anywhere; }
+#richEditor .ql-editor { min-height: 400px; padding: 24px; }
+#richEditor .ql-editor p, #preview p, #readerBody p { margin: 0 0 1.45em; }
+#richEditor .ql-editor h1, #preview h1 { font-size: 36px; }
+#richEditor .ql-editor h2, #preview h2, #readerBody h2 { font-size: 30px; line-height: 1.4; margin: 1.8em 0 .8em; }
+#richEditor .ql-editor h3, #preview h3, #readerBody h3 { font-size: 24px; line-height: 1.45; margin: 1.6em 0 .7em; }
+#richEditor .ql-editor h1, #richEditor .ql-editor h2, #richEditor .ql-editor h3 { font-family: Georgia, "Songti SC", serif; font-weight: 700; }
+#richEditor .ql-editor blockquote { border-left: 3px solid var(--accent); padding: 6px 0 6px 24px; margin: 1.5em 0; color: var(--muted); }
+#richEditor .ql-editor img, #richEditor .ql-editor video, .preview video { display: block; max-width: 100%; max-height: 560px; height: auto; margin: 20px auto; border-radius: 8px; }
+#richEditor .ql-editor video { width: 100%; background: #101716; }
+#richEditor .ql-editor a { color: var(--accent); text-decoration: underline; }
+#richEditor .ql-editor pre { white-space: pre-wrap; }
+#postBody { font-family: ui-monospace, Consolas, monospace; font-size: 15px; }
+.media-field { display: flex; gap: 8px; }
+.media-field input { min-width: 0; flex: 1; }
+.media-field button { flex-shrink: 0; white-space: nowrap; }
+.media-drop-zone { width: 100%; margin-top: 16px; padding: 24px 16px; border: 1px dashed #a5b5b2; border-radius: 10px; background: #f7faf9; color: var(--ink); line-height: 1.7; }
+.media-drop-zone span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.is-dragging { background: #e5f3ef !important; outline: 2px solid var(--accent); outline-offset: -2px; }
+.pending-media { background: #f1f5f4; padding: 12px; border-radius: 8px; font: 14px/1.6 system-ui,sans-serif; color: #4b625c; }
+.media-queue { list-style: none; padding: 0; }
+.media-queue li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.media-queue li span { flex: 1 1 180px; overflow-wrap: anywhere; }
+.media-queue progress { width: 100px; accent-color: var(--accent); }
+.editor-toolbar button, .editor-toolbar select { min-height: 40px; }
+@media(max-width:600px) {
+  #richEditor .ql-editor { padding: 16px; min-height: 360px; }
+  .editor-toolbar { gap: 6px; }
+  .editor-toolbar select { min-width: 0; max-width: 100%; flex: 1 1 100px; }
+  .panel { min-width: 0; }
+}
+
 .editor-toolbar select,
 .tool-btn {
   height: 34px;

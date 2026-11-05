@@ -3,10 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; media-src https: blob:; connect-src https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <title>网站在线运营台</title>
     <link rel="icon" href="../img/favicon.ico">
-    <link rel="stylesheet" href="styles.css?v=2.2.1">
+    <link rel="stylesheet" href="vendor/quill.core.css">
+    <link rel="stylesheet" href="styles.css?v=editor-20261105">
   </head>
   <body>
     <aside class="sidebar">
@@ -96,40 +97,64 @@
             <label>副标题<input id="postSubtitle" placeholder="可以不填"></label>
             <label>日期<input id="postDate" type="datetime-local"></label>
             <label>作者<input id="postAuthor" value="kimi"></label>
-            <label>封面图<input id="postImage" placeholder="img/home-bg.jpg 或 https://..."></label>
+            <label>封面图<span class="media-field"><input id="postImage" placeholder="选择图片或填写地址"><button type="button" class="ghost" data-upload-target="cover">上传图片</button></span></label>
             <label>标签<input id="postTags" placeholder="用逗号分隔"></label>
-            <label>视频地址（MP4 / HLS，可选）<input id="postVideoUrl" type="url" inputmode="url" placeholder="https://cdn.example.com/video.mp4"></label>
-            <label>视频封面（可选）<input id="postVideoPoster" type="url" inputmode="url" placeholder="https://cdn.example.com/poster.jpg"></label>
+            <label>视频（可选）<span class="media-field"><input id="postVideoUrl" type="url" inputmode="url" placeholder="选择视频或填写 MP4 / HLS 地址"><button type="button" class="ghost" data-upload-target="video">上传视频</button></span></label>
+            <label>视频封面（可选）<span class="media-field"><input id="postVideoPoster" type="url" inputmode="url" placeholder="选择图片或填写地址"><button type="button" class="ghost" data-upload-target="poster">上传图片</button></span></label>
             <label>视频时长（可选）<input id="postVideoDuration" placeholder="例如 03:45" maxlength="32"></label>
           </div>
+          <div class="editor-mode" role="group" aria-label="编辑方式">
+            <button type="button" class="ghost active" id="visualModeBtn" aria-pressed="true">可视化编辑</button>
+            <button type="button" class="ghost" id="sourceModeBtn" aria-pressed="false">Markdown / HTML 源码</button>
+          </div>
           <div class="editor-toolbar" aria-label="文章排版工具">
-            <select id="fontSizeSelect" title="字号">
-              <option value="">字号</option>
-              <option value="15">小字</option>
-              <option value="17">正文</option>
-              <option value="20">大字</option>
-              <option value="24">特大</option>
+            <select id="fontFamilySelect" aria-label="字体">
+              <option value="">博客默认字体</option>
+              <option value="SimSun, Songti SC, serif">宋体</option>
+              <option value="Microsoft YaHei, PingFang SC, sans-serif">黑体</option>
+              <option value="KaiTi, STKaiti, serif">楷体</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Arial, sans-serif">Arial</option>
             </select>
-            <select id="fontWeightSelect" title="字重">
+            <select id="fontSizeSelect" aria-label="字号">
+              <option value="">字号</option>
+              <option value="15px">小字 · 15</option>
+              <option value="18px">正文 · 18</option>
+              <option value="24px">大字 · 24</option>
+              <option value="30px">标题 · 30</option>
+              <option value="36px">特大 · 36</option>
+            </select>
+            <select id="fontWeightSelect" aria-label="字重">
               <option value="">粗细</option>
               <option value="400">常规</option>
               <option value="600">半粗</option>
               <option value="700">加粗</option>
             </select>
-            <button type="button" class="tool-btn" id="applyFontBtn" title="应用字号和粗细">应用</button>
+            <button type="button" class="tool-btn" data-format="paragraph" title="正文段落">正文</button>
             <button type="button" class="tool-btn" data-format="h2" title="二级标题">H2</button>
             <button type="button" class="tool-btn" data-format="h3" title="三级标题">H3</button>
             <button type="button" class="tool-btn" data-format="bold" title="加粗">B</button>
             <button type="button" class="tool-btn" data-format="italic" title="斜体">I</button>
+            <button type="button" class="tool-btn" data-format="underline" title="下划线">U</button>
             <button type="button" class="tool-btn" data-format="quote" title="引用">"</button>
             <button type="button" class="tool-btn" data-format="bullet" title="项目列表">•</button>
             <button type="button" class="tool-btn" data-format="number" title="编号列表">1.</button>
             <button type="button" class="tool-btn" data-format="link" title="链接">Link</button>
-            <button type="button" class="tool-btn" data-format="image" title="图片">Img</button>
+            <button type="button" class="tool-btn" data-upload-target="body" title="上传图片或视频">图片 / 视频</button>
+            <select id="textAlignSelect" aria-label="段落对齐"><option value="">左对齐</option><option value="center">居中</option><option value="right">右对齐</option><option value="justify">两端对齐</option></select>
+            <button type="button" class="tool-btn" data-format="clean">清除格式</button>
+            <button type="button" class="tool-btn" data-format="undo" title="撤销">撤销</button>
+            <button type="button" class="tool-btn" data-format="redo" title="重做">重做</button>
             <button type="button" class="tool-btn" data-format="divider" title="分隔线">---</button>
           </div>
-          <textarea id="postBody" spellcheck="false" placeholder="在这里写正文，选中文字后可用上方按钮排版。"></textarea>
-          <div class="preview" id="preview"></div>
+          <p class="editor-hint" id="editorHint">选中文字后直接修改字体与字号，效果会立即显示。粘贴内容保留字体、粗细与字号比例，正文统一适配博客的 18px；缺少的字体由设备替代。</p>
+          <div id="richEditor" aria-describedby="editorHint"></div>
+          <textarea id="postBody" hidden spellcheck="false" aria-label="文章 Markdown 或 HTML 源码" placeholder="Markdown / HTML 源码"></textarea>
+          <div class="preview" id="preview" hidden></div>
+          <button type="button" id="mediaDropZone" class="media-drop-zone">点击选择图片或视频，或将文件拖到这里<span>也可以直接拖入正文 · 图片最大 20 MB，视频最大 50 MB</span></button>
+          <input id="mediaFileInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/quicktime" multiple hidden>
+          <p id="mediaStatus" class="meta" role="status" aria-live="polite"></p>
+          <ul id="mediaQueue" class="media-queue" aria-label="上传列表"></ul>
         </article>
       </section>
 
@@ -214,7 +239,11 @@
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="app.js?v=2.2.1"></script>
+    <script src="vendor/purify.min.js"></script>
+    <script src="vendor/marked.umd.js"></script>
+    <script src="vendor/quill.js"></script>
+    <script src="editor.js?v=editor-20261105"></script>
+    <script src="app.js?v=editor-20261105"></script>
     <script src="moderation.js?v=2.2.1"></script>
   </body>
 </html>

@@ -43,6 +43,7 @@ export default {
       if (request.method === "DELETE" && url.pathname === "/posts") return json({ ok: true, result: await deletePost(env, await request.json()) });
       if (request.method === "GET" && url.pathname === "/about") return json({ ok: true, about: await getAbout(env) });
       if (request.method === "POST" && url.pathname === "/about") return json({ ok: true, about: await saveAbout(env, await request.json()) });
+      if (request.method === "POST" && url.pathname === "/media") return json({ ok: true, media: await uploadMedia(request, env, url) }, 201);
       return json({ ok: false, error: "没有这个接口" }, 404);
     } catch (error) {
       const status = Number.isInteger(error?.status) && error.status >= 400 && error.status < 600 ? error.status : 500;
@@ -406,6 +407,72 @@ async function github(env, path, options = {}) {
 
 function contentsPath(path) {
   return `/repos/${OWNER}/${REPO}/contents/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+// Accept a binary file, then stream base64 into the GitHub Contents request.
+// Never hold a whole video plus a base64/JSON copy in Worker memory.
+async function uploadMedia(request, env, url) {
+  const types = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' };
+  const name = url.searchParams.get('name') || '';
+  const extension = name.split('.').pop().toLowerCase();
+  const type = request.headers.get('Content-Type')?.split(';')[0];
+  const id = url.searchParams.get('id') || '';
+  const month = url.searchParams.get('month') || '';
+  const size = Number(url.searchParams.get('size'));
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id) || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)) throw httpError(400, '上传标识无效');
+  if (!Object.hasOwn(types,extension) || types[extension] !== type) throw httpError(415, '不支持这种文件类型，请选择图片或 MP4、MOV、WebM 视频');
+  const limit = (type.startsWith('video/') ? 50 : 20) * 1024 * 1024;
+  if (!Number.isSafeInteger(size) || size <= 0 || size > limit) throw httpError(413, `文件大小需在 1 字节到 ${limit / 1024 / 1024} MB 之间`);
+  if (!request.body) throw httpError(400, '没有收到文件');
+  const path = `media/uploads/${month}/${id}.${extension}`;
+  const reader = request.body.getReader();
+  let first = new Uint8Array(0);
+  while(first.length < Math.min(16,size)) {
+    const chunk=await reader.read();if(chunk.done)break;
+    const joined=new Uint8Array(first.length+chunk.value.length);joined.set(first);joined.set(chunk.value,first.length);first=joined;
+  }
+  const ascii = (a,b) => String.fromCharCode(...first.slice(a,b));
+  const valid = type === 'image/jpeg' ? first[0]===255&&first[1]===216&&first[2]===255
+    : type === 'image/png' ? first.slice(0,8).join(',')==='137,80,78,71,13,10,26,10'
+    : type === 'image/gif' ? /^GIF8[79]a$/.test(ascii(0,6))
+    : type === 'image/webp' ? ascii(0,4)==='RIFF'&&ascii(8,12)==='WEBP'
+    : type === 'video/webm' ? first.slice(0,4).join(',')==='26,69,223,163'
+    : type === 'image/avif' ? ascii(4,8)==='ftyp'&&/^(avif|avis)$/.test(ascii(8,12))
+    : ascii(4,8)==='ftyp' && !/^(heic|heix|mif1|avif|avis)$/.test(ascii(8,12));
+  if(!valid){await reader.cancel();throw httpError(415,'文件内容与扩展名不一致，请重新导出后上传');}
+  if(first.length>size){await reader.cancel();throw httpError(400,'文件长度不一致');}
+  const resultURL = commit => ({path,url:`https://${OWNER}.github.io/${path}`,previewUrl:`https://raw.githubusercontent.com/${OWNER}/${REPO}/${commit||BRANCH}/${path}`,size});
+  if(url.searchParams.get('retry')==='1'){
+    try {
+      const existing=await github(env,`${contentsPath(path)}?ref=${BRANCH}`);
+      if(existing.size===size){await reader.cancel();return resultURL();}
+      await reader.cancel();throw httpError(409,'这个上传标识已存在，请移除任务后重新选择文件');
+    } catch(error){if(error.status!==404)throw error;}
+  }
+  const prefix=JSON.stringify({message:`Upload media ${path}`,branch:BRANCH}).slice(0,-1)+',"content":"';
+  const encoder=new TextEncoder();
+  let bytes=first,total=first.length,phase=0;
+  const stream=new ReadableStream({
+    async pull(controller){
+      try{
+        if(phase===0){phase=1;controller.enqueue(encoder.encode(prefix));return;}
+        while(bytes.length<3){
+          const chunk=await reader.read();
+          if(chunk.done){
+            if(total!==size)throw new Error('文件上传不完整，请重试');
+            controller.enqueue(encoder.encode((bytes.length?btoa(String.fromCharCode(...bytes)):'')+'"}'));controller.close();return;
+          }
+          total+=chunk.value.length;if(total>size||total>limit)throw new Error('文件大小超过限制');
+          const joined=new Uint8Array(bytes.length+chunk.value.length);joined.set(bytes);joined.set(chunk.value,bytes.length);bytes=joined;
+        }
+        const part=bytes.subarray(0,Math.min(bytes.length-bytes.length%3,49152));
+        controller.enqueue(encoder.encode(btoa(String.fromCharCode(...part))));bytes=bytes.slice(part.length);
+      }catch(error){await reader.cancel().catch(()=>{});controller.error(error);}
+    },
+    cancel(reason){return reader.cancel(reason);},
+  });
+  const result=await github(env,contentsPath(path),{method:'PUT',headers:{'Content-Type':'application/json'},body:stream,duplex:'half'});
+  return resultURL(result.commit?.sha);
 }
 
 async function listPosts(env) {

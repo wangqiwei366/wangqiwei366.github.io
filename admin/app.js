@@ -24,6 +24,7 @@ const state = {
   githubToken: "",
   connecting: false,
   operationBusy: false,
+  uploading: false,
   repositoryRevision: 0,
   postsRequest: 0,
   posts: [],
@@ -156,7 +157,7 @@ function connectionErrorMessage(error) {
 }
 
 function setConnectionMode(mode) {
-  if (state.connecting || state.operationBusy) return;
+  if (state.connecting || state.operationBusy || state.uploading) return;
   const nextMode = mode === "worker" ? "worker" : "github";
   if (nextMode === state.connectionMode) return;
   state.connectionMode = nextMode;
@@ -178,6 +179,9 @@ function setOperationBusy(busy) {
 function renderBusyState() {
   const busy = state.connecting || state.operationBusy;
   $$("button, input, textarea, select").forEach((element) => { element.disabled = busy; });
+  articleEditor?.setEnabled(!busy);
+  $("#publishBtn").disabled = busy || state.uploading;
+  if (state.uploading) $$(".mode-button[data-mode], #saveTokenBtn, #forgetTokenBtn, #newPostBtn, #cancelEditBtn, #editBtn, #visualModeBtn, #sourceModeBtn").forEach(element => { element.disabled = true; });
   $("#saveTokenBtn").textContent = state.connecting ? "连接中" : "连接";
   document.body.setAttribute("aria-busy", String(busy));
 }
@@ -565,6 +569,7 @@ function resetEditor() {
   $("#postVideoPoster").value = "";
   $("#postVideoDuration").value = "";
   $("#postBody").value = "";
+  articleEditor?.set("");
   $("#preview").innerHTML = "";
 }
 
@@ -604,12 +609,13 @@ function fillEditor(post) {
   $("#postVideoPoster").value = post.videoPoster || "";
   $("#postVideoDuration").value = post.videoDuration || "";
   $("#postBody").value = post.body || "";
-  $("#preview").innerHTML = renderPostPreview(post);
+  articleEditor.set(post.body || "");
   setView("publish");
 }
 
 async function publishPost() {
   if (state.connecting || state.operationBusy) return;
+  if (articleEditor.hasUploads()) return toast("请先完成、重试或移除上传任务");
   const title = $("#postTitle").value.trim();
   const body = $("#postBody").value.trim();
   if (!title) return toast("先填写标题");
@@ -776,48 +782,7 @@ function openPost(path) {
 }
 
 function markdown(source) {
-  return restoreSafeFontSpans(escapeHtml(source))
-    // Font marks can wrap a whole paragraph or only part of a sentence. The
-    // old line-anchored expressions left inline marks visible as raw text.
-    .replace(/\[font\s+([^\]]+)\]([\s\S]*?)\[\/font\]/g, (match, attributes, text) => {
-      const styles = [];
-      String(attributes).replace(/(?:^|\s)(size|weight)=(\d+)/g, (part, name, value) => {
-        if (name === "size" && Number(value) >= 10 && Number(value) <= 72) styles.push(`font-size:${value}px`);
-        if (name === "weight" && Number(value) >= 100 && Number(value) <= 900) styles.push(`font-weight:${value}`);
-        return part;
-      });
-      return styles.length ? `<span style="${styles.join(";")}">${text}</span>` : text;
-    })
-    .replace(/^---$/gm, "<hr>")
-    .replace(/^### (.*)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.*)$/gm, "<h2>$1</h2>")
-    .replace(/^# (.*)$/gm, "<h1>$1</h1>")
-    .replace(/^> (.*)$/gm, "<blockquote>$1</blockquote>")
-    .replace(/^\d+\. (.*)$/gm, "<p class=\"ordered-line\">$1</p>")
-    .replace(/^- (.*)$/gm, "<p class=\"bullet-line\">$1</p>")
-    // Keep emphasis working when the selection spans more than one line.
-    // The old `.` based expressions silently left multiline formatting in the
-    // preview as raw Markdown, making the toolbar look broken on mobile.
-    .replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([\s\S]*?)\*/g, "<em>$1</em>")
-    .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .split(/\n{2,}/)
-    .map((block) => /^(<h|<img|<p style|<p class|<blockquote|<hr)/.test(block) ? block : `<p>${block.replace(/\n/g, "<br>")}</p>`)
-    .join("");
-}
-
-function restoreSafeFontSpans(value) {
-  return String(value || "").replace(/&lt;span\s+style=&quot;([^&]*)&quot;&gt;([\s\S]*?)&lt;\/span&gt;/gi, (match, rawStyle, text) => {
-    const styles = String(rawStyle).split(";").map((part) => part.trim()).filter(Boolean).map((part) => {
-      const size = part.match(/^font-size:(\d+)px$/i);
-      if (size && Number(size[1]) >= 8 && Number(size[1]) <= 72) return `font-size:${Number(size[1])}px`;
-      const weight = part.match(/^font-weight:(\d+)$/i);
-      if (weight && Number(weight[1]) >= 100 && Number(weight[1]) <= 900) return `font-weight:${Number(weight[1])}`;
-      return "";
-    }).filter(Boolean);
-    return styles.length ? `<span style="${styles.join(";")}">${text}</span>` : match;
-  });
+  return BlogEditor.render(source);
 }
 
 function renderVideo(videoUrl, videoPoster, videoDuration) {
@@ -841,38 +806,8 @@ function renderPostPreview(post) {
   return `${renderVideo(post.videoUrl, post.videoPoster, post.videoDuration)}${markdown(post.body || "")}`;
 }
 
-let rememberedBodySelection = { start: 0, end: 0 };
-
-function rememberBodySelection() {
-  const textarea = $("#postBody");
-  if (!textarea) return;
-  rememberedBodySelection = {
-    start: Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : 0,
-    end: Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : 0,
-  };
-}
-
-function selectedTextArea() {
-  const textarea = $("#postBody");
-  if (!textarea) return null;
-  // Tapping a toolbar button blurs a textarea on touch browsers and can reset
-  // its selection. Restore the last range before applying the requested mark.
-  if (document.activeElement !== textarea && rememberedBodySelection) {
-    const length = textarea.value.length;
-    const start = Math.min(length, Math.max(0, rememberedBodySelection.start));
-    const end = Math.min(length, Math.max(start, rememberedBodySelection.end));
-    textarea.setSelectionRange(start, end);
-  }
-  return textarea;
-}
-
 function updatePreview() {
-  $("#preview").innerHTML = renderPostPreview({
-    body: $("#postBody").value,
-    videoUrl: $("#postVideoUrl").value,
-    videoPoster: $("#postVideoPoster").value,
-    videoDuration: $("#postVideoDuration").value,
-  });
+  articleEditor.updatePreview();
 }
 
 function updateAboutPreview() {
@@ -885,50 +820,6 @@ function updateAboutPreview() {
     <h3>英文预览</h3>
     ${markdown(en)}
   `;
-}
-
-function replaceSelection(transform) {
-  const textarea = selectedTextArea();
-  if (!textarea) return;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const selected = textarea.value.slice(start, end);
-  const replacement = transform(selected);
-  textarea.value = textarea.value.slice(0, start) + replacement + textarea.value.slice(end);
-  textarea.focus();
-  textarea.setSelectionRange(start, start + replacement.length);
-  rememberedBodySelection = { start, end: start + replacement.length };
-  updatePreview();
-}
-
-function applyFormat(format) {
-  const lineWrap = (prefix) => replaceSelection((text) => {
-    if (!text) return `${prefix}在这里输入`;
-    return text.split(/\n/).map((line) => `${prefix}${line}`).join("\n");
-  });
-  const inlineWrap = (left, right = left) => replaceSelection((text) => `${left}${text || "在这里输入"}${right}`);
-  if (format === "h2") return lineWrap("## ");
-  if (format === "h3") return lineWrap("### ");
-  if (format === "bold") return inlineWrap("**");
-  if (format === "italic") return inlineWrap("*");
-  if (format === "quote") return lineWrap("> ");
-  if (format === "bullet") return lineWrap("- ");
-  if (format === "number") {
-    return replaceSelection((text) => text.split(/\n/).map((line, index) => `${index + 1}. ${line}`).join("\n"));
-  }
-  if (format === "link") return replaceSelection((text) => `[${text || "链接文字"}](https://)`);
-  if (format === "image") return replaceSelection((text) => `![${text || "图片描述"}](https://)`);
-  if (format === "divider") return replaceSelection(() => "\n\n---\n\n");
-}
-
-function applyFontStyle() {
-  const size = $("#fontSizeSelect")?.value;
-  const weight = $("#fontWeightSelect")?.value;
-  if (!size && !weight) return;
-  replaceSelection((text) => {
-    const styles = [size ? `font-size:${Number(size)}px` : "", weight ? `font-weight:${Number(weight)}` : ""].filter(Boolean).join(";");
-    return `<span style="${styles}">${text || "在这里输入"}</span>`;
-  });
 }
 
 function createProgress(title) {
@@ -1067,20 +958,7 @@ function bind() {
     updateAboutPreview();
   });
   $("#searchInput")?.addEventListener("input", renderPosts);
-  $("#postBody")?.addEventListener("input", () => { rememberBodySelection(); updatePreview(); });
-  $("#postBody")?.addEventListener("select", rememberBodySelection);
-  $("#postBody")?.addEventListener("keyup", rememberBodySelection);
-  $("#postBody")?.addEventListener("blur", rememberBodySelection);
   ["#postVideoUrl", "#postVideoPoster", "#postVideoDuration"].forEach((selector) => $(selector)?.addEventListener("input", updatePreview));
-  $$(".tool-btn").forEach((button) => {
-    // Preserve the textarea caret when a formatting button is tapped on a
-    // phone. `mousedown` is cancelled so the button does not steal focus;
-    // `selectedTextArea` also restores the saved range for touch browsers.
-    button.type = "button";
-    button.addEventListener("mousedown", (event) => event.preventDefault());
-    button.addEventListener("click", () => applyFormat(button.dataset.format));
-  });
-  $("#applyFontBtn")?.addEventListener("click", applyFontStyle);
   $("#postList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-path]");
     if (button) openPost(button.dataset.path);
@@ -1096,6 +974,12 @@ function bind() {
   });
 }
 
+const articleEditor = BlogEditor.create({
+  toast,
+  requireConnection: requireBackend,
+  getConnection: () => ({ mode: state.connectionMode, token: state.githubToken, apiBase: state.apiBase, password: state.password }),
+  onUploads: count => { state.uploading = count > 0; renderBusyState(); },
+});
 bind();
 resetEditor();
 renderConnectionState();

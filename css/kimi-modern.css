@@ -4098,5 +4098,21 @@ html[data-theme="light"] .download-option--featured .download-option__icon {
 .comments-delete-dialog::backdrop { background: #17212b66; backdrop-filter: blur(4px); }
 .comments-delete-dialog h3 { margin: 0 0 14px; font-size: 22px; }
 .comments-delete-dialog p { font-size: 15px; line-height: 1.7; }
+
+/* Rich article HTML keeps inline typography; media fits the reading column. */
+.post-container .blog-rich-text { overflow-wrap: anywhere; }
+.post-container .blog-rich-text video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: 75vh;
+  height: auto;
+  margin: 1.5em auto;
+  border-radius: 8px;
+  background: #101716;
+}
+.post-container .blog-rich-text img { display: block; max-width: 100%; height: auto; }
+.post-container .blog-rich-text pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.post-container .blog-rich-text table { display: block; max-width: 100%; overflow-x: auto; }
 .comments-delete-actions { display: flex; gap: 12px; margin-top: 22px; }
 .comments-delete-actions .comments-button { flex: 1; border-radius: 999px; min-height: 44px; }
